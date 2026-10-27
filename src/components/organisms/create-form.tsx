@@ -14,6 +14,8 @@ export type FieldDef = {
   /** For type "select". The first empty option is the placeholder. */
   options?: { value: string; label: string }[];
   required?: boolean;
+  /** Initial value, used by EditDialog. */
+  defaultValue?: string;
   pattern?: string;
   maxLength?: number;
   inputMode?: "text" | "numeric" | "decimal";

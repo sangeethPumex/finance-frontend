@@ -1,14 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowsLeftRight } from "@phosphor-icons/react";
+import { ArrowDownLeft, ArrowsLeftRight, ArrowUpRight, ArrowUUpLeft, CalendarCheck, CreditCard, Money, type Icon } from "@phosphor-icons/react";
 import { api, useWrite, type Account, type Card, type Category, type Txn } from "@/lib/api";
 import { shortDateTime } from "@/lib/dates";
 import { inr } from "@/lib/money";
-import { signed, sourceLabel, vendorLabel } from "@/lib/txn";
+import { cn } from "@/lib/cn";
+import { isDebit, signed, sourceLabel, vendorLabel } from "@/lib/txn";
 import { Button, Select } from "../atoms";
 import { InlineError } from "../molecules";
 import { DataTable, type Column } from "./data-table";
+
+const TYPE_ICON: Record<string, Icon> = { atm: Money, emi: CalendarCheck, card_bill_payment: CreditCard, refund: ArrowUUpLeft };
+
+/** Round badge: red up-arrow for money out, green down-arrow for money in; special types get their own glyph. */
+function DirectionBadge({ t }: { t: Txn }) {
+  const debit = isDebit(t);
+  const Glyph = TYPE_ICON[t.type] ?? (debit === false ? ArrowDownLeft : debit ? ArrowUpRight : ArrowsLeftRight);
+  const tone = debit === false ? "bg-gain-bg text-gain" : debit ? "bg-loss-bg text-loss" : "bg-tint text-muted";
+  return <span className={cn("grid size-8 shrink-0 place-items-center rounded-full", tone)}><Glyph size={16} weight="bold" /></span>;
+}
 
 /** Files an unknown-vendor transaction: creates a vendor with this payee as its alias. */
 function ReviewCell({ t, categories }: { t: Txn; categories: Category[] }) {
@@ -39,7 +50,11 @@ export type TransactionsTableProps = {
 export function TransactionsTable({ txns, accounts, cards, categories, loading, emptyText = "No transactions yet" }: TransactionsTableProps) {
   const columns: Column<Txn>[] = [
     { key: "date", header: "Date", cell: (t) => <span className="whitespace-nowrap text-muted">{shortDateTime(t.received_at ?? t.occurred_at)}</span> },
-    { key: "vendor", header: "Vendor", cell: (t) => vendorLabel(t) },
+    {
+      key: "vendor",
+      header: "Vendor",
+      cell: (t) => <span className="flex items-center gap-3"><DirectionBadge t={t} /><span className="font-medium text-ink">{vendorLabel(t)}</span></span>,
+    },
     {
       key: "category",
       header: "Category",
@@ -48,7 +63,7 @@ export function TransactionsTable({ txns, accounts, cards, categories, loading, 
         : <span className="text-muted">{categories.find((c) => c.id === t.category_id)?.name ?? "—"}</span>,
     },
     { key: "account", header: "Account", cell: (t) => <span className="text-muted">{sourceLabel(t, accounts, cards)}</span> },
-    { key: "amount", header: "Amount", align: "right", cell: (t) => <span className="num">{signed(t) > 0 ? "+" : ""}{inr(signed(t))}</span> },
+    { key: "amount", header: "Amount", align: "right", cell: (t) => <span className={cn("num font-medium", isDebit(t) === false ? "text-gain" : isDebit(t) ? "text-loss" : "text-sub")}>{signed(t) > 0 ? "+" : ""}{inr(signed(t))}</span> },
   ];
   return <DataTable columns={columns} rows={txns} rowKey={(t) => t.id} loading={loading} emptyIcon={ArrowsLeftRight} emptyText={emptyText} />;
 }

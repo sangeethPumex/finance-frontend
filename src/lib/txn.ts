@@ -1,4 +1,5 @@
 import type { Account, Card, Txn } from "@/lib/api";
+import { bankName } from "@/lib/banks";
 
 const OUT = ["expense", "atm", "emi", "card_bill_payment"];
 const IN = ["income", "refund"];
@@ -23,5 +24,5 @@ export function sourceLabel(t: Txn, accounts: Account[], cards: Card[]): string 
   if (a) return a.name;
   const c = cards.find((x) => x.id === t.card_id);
   if (c) return c.name;
-  return t.account_last4 ? `${t.bank ?? "Bank"} ••${t.account_last4}` : "—";
+  return t.bank ? bankName(t.bank) : "—";
 }

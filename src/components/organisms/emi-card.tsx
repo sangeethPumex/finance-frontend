@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useIsMutating } from "@tanstack/react-query";
-import { CaretRight, DotsThreeVertical } from "@phosphor-icons/react";
+import { CaretRight, CreditCard, CurrencyInr, DotsThreeVertical, HandCoins, Info, ListBullets, Percent, Receipt } from "@phosphor-icons/react";
 import { api, type EmiView, useAct, useEmiImpact } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { shortDate } from "@/lib/dates";
 import { inr } from "@/lib/money";
 import { Button, Input } from "../atoms";
-import { FormField, Meter, Modal } from "../molecules";
+import { FormField, Meter, Modal, SectionTitle } from "../molecules";
 import { KIND_ICON, KIND_LABEL } from "./emi-form";
 
 const rs = (n: number) => inr(Math.round(n * 100));
@@ -21,20 +21,20 @@ function ExtraPayment({ emi, onClose }: { emi: EmiView; onClose: () => void }) {
   const impact = useEmiImpact(emi.id, ok ? principal : 0).data;
   const field = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement>) => setV({ ...v, [k]: e.target.value });
   return (
-    <Modal title={`Extra payment · ${emi.name}`} onClose={onClose}>
+    <Modal title="Extra payment" subtitle={emi.name} icon={HandCoins} onClose={onClose}>
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (ok) act(() => api(`/emis/${emi.id}/payments`, { method: "POST", body: { kind: "extra", amount, interest, fees } }), { ok: "Extra payment recorded", onDone: onClose }); }}>
-        <FormField label="Amount paid (₹)"><Input type="number" min={0} step="any" value={v.amount} onChange={field("amount")} autoFocus /></FormField>
+        <FormField label="Amount paid (₹)" icon={CurrencyInr}><Input type="number" min={0} step="any" value={v.amount} onChange={field("amount")} autoFocus /></FormField>
         <div className="grid grid-cols-2 gap-4">
-          <FormField label="Of which interest (₹)"><Input type="number" min={0} step="any" value={v.interest} onChange={field("interest")} placeholder="0" /></FormField>
-          <FormField label="Of which fees (₹)"><Input type="number" min={0} step="any" value={v.fees} onChange={field("fees")} placeholder="0" /></FormField>
+          <FormField label="Of which interest (₹)" icon={Percent}><Input type="number" min={0} step="any" value={v.interest} onChange={field("interest")} placeholder="0" /></FormField>
+          <FormField label="Of which fees (₹)" icon={Receipt}><Input type="number" min={0} step="any" value={v.fees} onChange={field("fees")} placeholder="0" /></FormField>
         </div>
-        <p className="text-[13px] text-muted">Reduces principal by <span className="num text-ink">{ok ? rs(principal) : "–"}</span>. Check your lender&apos;s receipt for the real split.</p>
+        <p className="text-[13px] text-muted">Reduces principal by <span className="num font-semibold text-ink">{ok ? rs(principal) : "–"}</span>. Check your lender&apos;s receipt for the real split.</p>
         {ok && impact?.available && (
           <p className="border border-line bg-tint p-3 text-[12px] text-sub">
             Estimate: saves about <span className="num text-gain">{rs(impact.interestSaved ?? 0)}</span> interest and finishes {impact.monthsSaved} month{impact.monthsSaved === 1 ? "" : "s"} sooner ({impact.monthsLeft} left). Not lender-confirmed.
           </p>
         )}
-        <Button type="submit" disabled={!ok}>Record extra payment</Button>
+        <div className="border-t border-line pt-4"><Button type="submit" disabled={!ok}>Record extra payment</Button></div>
       </form>
     </Modal>
   );
@@ -92,7 +92,7 @@ export function EmiCard({ emi, onEdit }: { emi: EmiView; onEdit: () => void }) {
           </Ring>
         )}
         <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" className="min-w-0 flex-1 text-left">
-          <div className="flex items-center gap-2"><span className="truncate font-medium">{emi.name}</span><CaretRight size={14} className="text-muted" /></div>
+          <div className="flex items-center gap-2"><span className="truncate font-semibold">{emi.name}</span><CaretRight size={14} className="text-muted" />{emi.cardName && <span className="flex items-center gap-1 bg-tint px-1.5 py-0.5 text-[11px] font-medium text-sub"><CreditCard size={12} />{emi.cardName}</span>}</div>
           <div className="num mt-1 text-[24px] font-light leading-none tracking-tight">{emi.active ? rs(emi.left) : "Closed"}</div>
           <div className="mt-2 text-[12px] text-muted">
             {rs(emi.amount)} {isCard ? "minimum" : "a month"} · due the {emi.dueDay}th{emi.active && emi.daysToDue <= 7 && <span className={cn("ml-2 px-1.5 py-0.5 font-medium", emi.daysToDue <= 3 ? "bg-loss-bg text-loss" : "bg-warn/10 text-warn")}>due in {emi.daysToDue} day{emi.daysToDue === 1 ? "" : "s"}</span>}
@@ -128,20 +128,20 @@ export function EmiCard({ emi, onEdit }: { emi: EmiView; onEdit: () => void }) {
       </div>
 
       {open && (
-        <Modal title={emi.name} wide onClose={() => setOpen(false)}>
+        <Modal title={emi.name} subtitle={`${KIND_LABEL[emi.kind]}${emi.cardName ? ` · on ${emi.cardName}` : ""}`} icon={Icon} wide onClose={() => setOpen(false)}>
           <div className="mb-5"><div className="num text-[28px] font-light leading-none">{emi.active ? rs(emi.left) : "Closed"}</div><div className="mt-1 text-[12px] text-muted">{rs(emi.amount)} {isCard ? "minimum" : "a month"} · due the {emi.dueDay}th</div></div>
         <div className="grid gap-6 text-[13px] md:grid-cols-2">
           <div>
-            <div className="eyebrow mb-2">Details</div>
+            <SectionTitle icon={Info}>Details</SectionTitle>
             <dl className="space-y-1">
-              {([["Type", KIND_LABEL[emi.kind]], ["Interest rate", emi.rate !== undefined ? `${emi.rate}% a year` : "–"], ["Paid as principal", rs(emi.paidPrincipal)], ["Paid as interest and fees", rs(emi.paidInterest)]] as const).map(([k, v]) => (
-                <div key={k} className="flex justify-between"><dt className="text-muted">{k}</dt><dd className="num">{v}</dd></div>
+              {([["Type", KIND_LABEL[emi.kind]], ["Charged to", emi.cardName ?? "–"], ["Interest rate", emi.rate !== undefined ? `${emi.rate}% a year` : "–"], ["Paid as principal", rs(emi.paidPrincipal)], ["Paid as interest and fees", rs(emi.paidInterest)]] as const).map(([k, v]) => (
+                <div key={k} className="flex justify-between"><dt className="text-muted">{k}</dt><dd className="num font-medium">{v}</dd></div>
               ))}
             </dl>
             {emi.balance !== undefined && <p className="mt-3 text-[12px] text-muted">Balance is an estimate from the payments you record. Use Update balance to match your lender statement.</p>}
           </div>
           <div>
-            <div className="eyebrow mb-2">Payments</div>
+            <SectionTitle icon={ListBullets}>Payments</SectionTitle>
             {history.length === 0 ? <p className="text-muted">None recorded yet.</p> : (
               <ul className="divide-y divide-line-soft">
                 {history.slice(0, 8).map((p) => (

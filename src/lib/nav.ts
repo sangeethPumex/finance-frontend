@@ -10,7 +10,7 @@ export const NAV_GROUPS: NavLink[][] = [
     { href: "/funds", label: "Mutual Funds", icon: ChartPie },
     { href: "/stocks", label: "Stocks", icon: ChartLineUp },
     { href: "/emis", label: "EMIs", icon: Calendar },
-    { href: "/cards", label: "Cards", icon: CreditCard },
+    { href: "/cards", label: "Credit Cards", icon: CreditCard },
     { href: "/profile", label: "About Me", icon: UserCircle },
     { href: "/transactions", label: "Transactions", icon: ArrowsLeftRight },
   ],

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowDownRight, ArrowUpRight, ChartLineUp, Plus } from "@phosphor-icons/react";
-import { Button } from "@/components/atoms";
-import { Card, Donut, EmptyState, Modal, RowSkeleton, StatCard, StatSkeleton } from "@/components/molecules";
+import { ArrowDownRight, ArrowUpRight, ChartLineUp, ClockCounterClockwise, Plus } from "@phosphor-icons/react";
+import { Button, CompanyLogo } from "@/components/atoms";
+import { Card, Donut, EmptyState, Modal, RowSkeleton, SectionTitle, StatCard, StatSkeleton } from "@/components/molecules";
 import { StockForm } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { api, type StockInput, type StockLot, type StockPosition, useAct, useStocks } from "@/lib/api";
@@ -24,7 +24,7 @@ const held = (iso: string) => {
   const d = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 864e5)), m = Math.floor(d / 30.44);
   return m >= 12 ? `${Math.floor(m / 12)}y${m % 12 ? ` ${m % 12}m` : ""}` : m >= 1 ? `${m}m` : `${d}d`;
 };
-const toInput = (l: StockLot): StockInput => ({ symbol: l.symbol, quantity: l.quantity, buyPrice: l.buyPrice, buyDate: l.buyDate });
+const toInput = (l: StockLot): StockInput => ({ symbol: l.symbol, quantity: l.quantity, buyPrice: l.buyPrice, buyDate: l.buyDate, platform: l.platform });
 
 /** form: undefined closed; { symbol } adding (symbol prefilled when adding to a holding); { lot } editing. */
 type FormState = undefined | { lot?: StockLot; symbol?: string };
@@ -69,9 +69,12 @@ export default function Stocks() {
             {positions.map((p) => (
               <button key={p.symbol} type="button" aria-haspopup="dialog" onClick={() => setOpen(p.symbol)} className={cn("flex flex-col border border-t-4 border-line bg-white p-5 text-left transition-shadow hover:shadow-md", edge(p.pnl))}>
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="truncate font-medium">{p.name ?? p.symbol}</div>
-                    <div className="num mt-0.5 text-[12px] text-muted">{p.symbol} · {p.lots.length} purchase{p.lots.length === 1 ? "" : "s"}</div>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <CompanyLogo symbol={p.symbol} domain={p.domain} name={p.name ?? p.symbol} />
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{p.name ?? p.symbol}</div>
+                      <div className="num mt-0.5 text-[12px] text-muted">{p.symbol} · {p.lots.length} purchase{p.lots.length === 1 ? "" : "s"}</div>
+                    </div>
                   </div>
                   {p.price !== undefined && (
                     <div className="num shrink-0 text-right">
@@ -99,27 +102,28 @@ export default function Stocks() {
       </div>
 
       {sel && (
-        <Modal title={sel.name ?? sel.symbol} wide onClose={() => setOpen(null)}>
+        <Modal title={sel.name ?? sel.symbol} subtitle={sel.symbol} icon={ChartLineUp} wide onClose={() => setOpen(null)}>
           <div className="mb-5 flex items-end justify-between gap-4">
-            <div>
+            <div className="flex items-center gap-4">
+              <CompanyLogo symbol={sel.symbol} domain={sel.domain} name={sel.name ?? sel.symbol} className="size-12" />
+              <div>
               <div className="num text-[28px] font-light leading-none">{rs(sel.value)}</div>
               <div className="num mt-1 text-[12px] text-muted">{sel.symbol} · {sel.price !== undefined ? `₹${sel.price.toFixed(2)}${sel.prevClose ? ` · prev close ₹${sel.prevClose.toFixed(2)}` : ""} · as of ${asOf(sel.asOf)}` : "No price available"}</div>
+              </div>
             </div>
             <div className={cn("num px-2 py-1 text-[13px] font-medium", chip(sel.pnl))}>{sign(sel.pnl)}{rs(sel.pnl)} ({pct(sel.pnlPct)})</div>
           </div>
-          <div className="mb-2 flex items-center justify-between">
-            <div className="eyebrow">Purchase history</div>
-            <Button size="sm" icon={Plus} onClick={() => { setOpen(null); setForm({ symbol: sel.symbol }); }}>Add purchase</Button>
-          </div>
+          <SectionTitle icon={ClockCounterClockwise} action={<Button size="sm" icon={Plus} onClick={() => { setOpen(null); setForm({ symbol: sel.symbol }); }}>Add purchase</Button>}>Purchase history</SectionTitle>
           <div className="overflow-x-auto border border-line">
-            <table className="num w-full min-w-[640px] text-[13px]">
+            <table className="num w-full min-w-160 text-[13px]">
               <thead className="bg-tint text-left text-[11px] uppercase tracking-wide text-muted">
-                <tr><th className="p-3 font-medium">Date</th><th className="p-3 text-right font-medium">Qty</th><th className="p-3 text-right font-medium">Buy price</th><th className="p-3 text-right font-medium">Cost</th><th className="p-3 text-right font-medium">Value now</th><th className="p-3 text-right font-medium">P&amp;L</th><th className="p-3" /></tr>
+                <tr><th className="p-3 font-medium">Date</th><th className="p-3 font-medium">Platform</th><th className="p-3 text-right font-medium">Qty</th><th className="p-3 text-right font-medium">Buy price</th><th className="p-3 text-right font-medium">Cost</th><th className="p-3 text-right font-medium">Value now</th><th className="p-3 text-right font-medium">P&amp;L</th><th className="p-3" /></tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {sel.lots.map((l) => (
                   <tr key={l.id}>
                     <td className="p-3">{day(l.buyDate)}<div className="text-[11px] text-muted">{held(l.buyDate)} ago</div></td>
+                    <td className="p-3">{l.platform || <span className="text-muted">—</span>}</td>
                     <td className="p-3 text-right">{l.quantity}</td>
                     <td className="p-3 text-right">₹{l.buyPrice.toFixed(2)}</td>
                     <td className="p-3 text-right">{rs(l.quantity * l.buyPrice)}</td>
@@ -134,7 +138,7 @@ export default function Stocks() {
               </tbody>
               <tfoot className="border-t border-line bg-tint font-medium">
                 <tr>
-                  <td className="p-3">Total</td><td className="p-3 text-right">{sel.quantity}</td><td className="p-3 text-right">₹{sel.avgPrice.toFixed(2)} avg</td>
+                  <td className="p-3">Total</td><td /><td className="p-3 text-right">{sel.quantity}</td><td className="p-3 text-right">₹{sel.avgPrice.toFixed(2)} avg</td>
                   <td className="p-3 text-right">{rs(sel.invested)}</td><td className="p-3 text-right">{rs(sel.value)}</td>
                   <td className={cn("p-3 text-right", text(sel.pnl))}>{sign(sel.pnl)}{rs(sel.pnl)}<div className="text-[11px]">{pct(sel.pnlPct)}</div></td><td />
                 </tr>

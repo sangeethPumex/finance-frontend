@@ -3,9 +3,30 @@ import { toast } from "sonner";
 
 export type Account = {
   id: string; name: string; bank: string; last4: string;
-  opening_balance_paise: number; opening_at: string; balance_paise: number;
+  opening_balance_paise: number; opening_at: string; created_at: string; balance_paise: number;
 };
-export type Card = { id: string; name: string; bank?: string; last4?: string };
+
+export type CardKind = "credit" | "paylater";
+export type LinkedEmi = { id: string; name: string; monthly: number; left: number; active: boolean };
+/** The account page: balance, this month's flow, a 30-day balance line, top payees, spending by category and the SIPs that debit it. Paise, except SIP amounts (rupees). */
+export type AccountDetail = Account & {
+  month_start: string; in_paise: number; out_paise: number; month_txns: number; total_txns: number; needs_review: number;
+  series: { date: string; paise: number }[];
+  top_payees: { name: string; paise: number; count: number }[];
+  by_category: { category_id?: string; paise: number }[];
+  sips: { name: string; amount: number; day: number; inDays: number; genius?: boolean }[]; sip_monthly: number;
+};
+/** A credit card or pay-later line. Money is paise; days are of the month (0 or absent when unknown). */
+export type Card = {
+  id: string; name: string; kind: CardKind; bank?: string; last4?: string;
+  limit_paise?: number; billing_day?: number; due_day?: number; outstanding_paise?: number;
+  /** Set when this card draws on another card's limit. limit_paise, available and utilisation are then the group's; used_paise stays this card's own. */
+  shared_with?: string; shared_with_name?: string; shared_cards: string[]; group_used_paise?: number;
+  cycle_start: string; cycle_spent_paise: number; cycle_txns: number;
+  linked_emis: LinkedEmi[]; linked_monthly_paise: number; linked_left_paise: number;
+  used_paise: number; available_paise?: number; utilisation?: number; days_to_billing?: number; days_to_due?: number;
+};
+export type CardInput = { name: string; kind: CardKind; bank?: string; last4?: string; limit_paise?: number; billing_day?: number; due_day?: number; outstanding_paise?: number; shared_with?: string };
 export type Category = { id: string; name: string };
 export type Vendor = { id: string; name: string; category_id?: string; aliases: string[] };
 export type Txn = {
@@ -44,6 +65,8 @@ const list = <T,>(key: string, path = `/${key}`) => () => useQuery({ queryKey: [
 
 export const useAccounts = list<Account>("accounts");
 export const useCards = list<Card>("cards");
+export const useAccount = (id: string) => useQuery({ queryKey: ["account", id], queryFn: () => api<AccountDetail>(`/accounts/${id}`) });
+export const useAccountTxns = (id: string) => useQuery({ queryKey: ["transactions", "account", id], queryFn: () => api<Txn[]>(`/transactions?limit=200&account_id=${id}`) });
 export const useCategories = list<Category>("categories");
 export const useVendors = list<Vendor>("vendors");
 export const useSummary = () => useQuery({ queryKey: ["summary"], queryFn: () => api<Summary>("/summary") });
@@ -104,10 +127,10 @@ export type EmiKind = "loan" | "purchase" | "card";
 export type Payment = { id: string; date: string; kind: "emi" | "extra"; amount: number; principal: number; interest: number; fees: number; reduced: number };
 export type EmiView = {
   id: string; name: string; kind: EmiKind; amount: number; dueDay: number; total: number; paid: number;
-  rate?: number; balance?: number; original?: number; payments?: Payment[];
+  rate?: number; balance?: number; original?: number; cardId?: string; cardName?: string; payments?: Payment[];
   active: boolean; left: number; instalmentsLeft: number; daysToDue: number; repaid?: number; paidPrincipal: number; paidInterest: number;
 };
-export type EmiInput = { name: string; kind: EmiKind; amount: number; dueDay: number; total: number; paid: number; rate?: number; balance?: number; original?: number };
+export type EmiInput = { name: string; kind: EmiKind; amount: number; dueDay: number; total: number; paid: number; rate?: number; balance?: number; original?: number; cardId?: string };
 export type EmiSummary = {
   monthly: number; outstanding: number; activeCount: number; paidSoFar: number; principalPaid: number; interestPaid: number;
   next?: { name: string; amount: number; days: number };
@@ -128,26 +151,32 @@ export type Sip = { amount: number; day: number; status?: SipStatus };
 export type FundView = {
   id: string; code: number; name: string; fundHouse?: string; platform: string; accountId?: string; type: FundType; membership: Membership;
   units: number; avgNav: number; invested: number; nav?: number; navDate?: string; sip?: Sip;
+  /** exited: moved out of the portfolio (a Genius rebalance or a redemption); value and pnl are then what it sold for and the realised gain. */
+  active: boolean; status?: "exited"; joinedAt?: string; exitedAt?: string; proceeds?: number;
   value: number; pnl: number; returnPct?: number; sipInDays?: number;
 };
-export type FundInput = { code: number; platform: string; accountId?: string; type: FundType; membership: Membership; units: number; avgNav: number; invested?: number; sip?: Sip };
+export type FundInput = { code: number; platform: string; accountId?: string; type: FundType; membership: Membership; units: number; avgNav: number; invested?: number; sip?: Sip; joinedAt?: string };
 export type FundSummary = {
   invested: number; value: number; pnl: number; count: number; sipMonthly: number; asOf?: string;
   byType: { name: string; value: number }[]; byPlatform: { name: string; value: number }[];
   nextSip?: { name: string; amount: number; days: number };
+  realised: number; exited: number; genius: GeniusSummary;
 };
+export type GeniusMove = { name: string; kind: "in" | "out"; date: string; amount: number };
+export type GeniusSip = Sip & { accountId?: string };
+export type GeniusSummary = { sip?: GeniusSip; sipInDays?: number; active: number; value: number; invested: number; pnl: number; exited: number; realised: number; lastRebalance?: string; moves: GeniusMove[] };
 export type FundLookup = { code: number; name: string; fundHouse: string; category: string; nav: number; date: string };
 export const useFunds = () => useQuery({ queryKey: ["funds"], queryFn: () => api<{ items: FundView[]; summary: FundSummary }>("/funds") });
 export const lookupFund = (code: string) => api<FundLookup>(`/funds/lookup/${encodeURIComponent(code.trim())}`);
 
 // ---- Stocks: rupees; the backend computes everything and prices are never stored with a holding ----
-export type StockLot = { id: string; symbol: string; quantity: number; buyPrice: number; buyDate: string; value: number; pnl: number; returnPct: number };
+export type StockLot = { id: string; symbol: string; quantity: number; buyPrice: number; buyDate: string; platform?: string; value: number; pnl: number; returnPct: number };
 export type StockPosition = {
-  symbol: string; name?: string; quantity: number; avgPrice: number; invested: number; price?: number; prevClose?: number; asOf?: string;
+  symbol: string; name?: string; domain?: string; quantity: number; avgPrice: number; invested: number; price?: number; prevClose?: number; asOf?: string;
   value: number; pnl: number; pnlPct: number; dayChange: number; dayPct: number; allocation: number; stale: boolean; lots: StockLot[];
 };
 export type StockSummary = { invested: number; value: number; pnl: number; pnlPct: number; dayChange: number; dayPct: number; asOf?: string; stale: boolean; unpriced: number };
-export type StockInput = { symbol: string; quantity: number; buyPrice: number; buyDate: string };
+export type StockInput = { symbol: string; quantity: number; buyPrice: number; buyDate: string; platform?: string };
 export const useStocks = () => useQuery({ queryKey: ["stocks"], queryFn: () => api<{ summary: StockSummary; positions: StockPosition[] }>("/stocks") });
 
 /** Runs any backend write, then refetches everything. Success and failure both show a toast. */
