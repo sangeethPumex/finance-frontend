@@ -55,7 +55,7 @@ export function NetWorthChart() {
   const end = (get: (p: NWPoint) => number | undefined) => { const p = proj[proj.length - 1]; return p && get(p) !== undefined ? { x: x(day(p.date)), y: y(get(p)!), v: get(p)! } : undefined; };
 
   return (
-    <div className="rounded-lg bg-tint px-4 py-5 sm:px-6">
+    <div className="rounded-lg border border-line bg-white px-4 py-5 sm:px-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h3 className="text-[15px] font-semibold tracking-tight">Where your net worth is heading</h3>

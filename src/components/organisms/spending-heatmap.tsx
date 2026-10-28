@@ -20,7 +20,7 @@ export function SpendingHeatmap() {
   const weeks = Array.from({ length: Math.ceil(days.length / 7) }, (_, i) => days[i * 7]);
 
   return (
-    <div className="rounded-lg bg-tint px-4 py-5 sm:px-6">
+    <div className="rounded-lg border border-line bg-white px-4 py-5 sm:px-6">
       <h3 className="text-[15px] font-semibold tracking-tight">Every day you spent</h3>
       <p className="mt-0.5 text-[12px] text-muted">{inr(total)} over {active} days in the last 26 weeks. Excludes investments and transfers</p>
       <div ref={scroller} className="mt-4 overflow-x-auto pb-1">

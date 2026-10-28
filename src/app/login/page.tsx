@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Divider, Eyebrow, Input } from "@/components/atoms";
+import { Button, Eyebrow, Input } from "@/components/atoms";
 import { InlineError } from "@/components/molecules";
-import { CenteredLayout } from "@/components/templates";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,18 +26,22 @@ export default function LoginPage() {
   }
 
   return (
-    <CenteredLayout>
-      <form onSubmit={submit} className="flex w-full max-w-[280px] flex-col items-center gap-6 text-center">
-        <div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/catalyst-full.svg" alt="Catalyst" className="mx-auto h-10 w-auto" />
-          <Eyebrow className="mt-2 tracking-[0.2em]">Personal finance</Eyebrow>
-        </div>
-        <Divider variant="accent" />
-        <Input name="passphrase" type="password" placeholder="Passphrase" aria-label="Passphrase" autoFocus autoComplete="current-password" required className="w-full text-center" />
-        <InlineError error={error} />
-        <Button type="submit" loading={busy} className="w-full">Sign In</Button>
-      </form>
-    </CenteredLayout>
+    <main className="grid min-h-dvh bg-white md:grid-cols-[1.1fr_1fr]">
+      <div aria-hidden className="relative h-44 bg-black bg-cover bg-center md:h-auto" style={{ backgroundImage: "url(/login-bg.jpg)" }}>
+        <span className="absolute bottom-4 left-5 hidden text-[11px] uppercase tracking-[0.3em] text-white/60 md:block">Every rupee, accounted for</span>
+      </div>
+      <div className="grid place-items-center px-6 py-12">
+        <form onSubmit={submit} className="flex w-full max-w-[300px] flex-col gap-6">
+          <div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/catalyst-full.svg" alt="Catalyst" className="h-9 w-auto" />
+            <Eyebrow className="mt-3 tracking-[0.2em]">Personal finance</Eyebrow>
+          </div>
+          <Input name="passphrase" type="password" placeholder="Passphrase" aria-label="Passphrase" autoFocus autoComplete="current-password" required className="w-full" />
+          <InlineError error={error} />
+          <Button type="submit" loading={busy} size="lg" className="w-full">Sign in</Button>
+        </form>
+      </div>
+    </main>
   );
 }

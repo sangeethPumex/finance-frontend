@@ -41,7 +41,7 @@
 }
 
 @layer base {
-  html { background: var(--color-hover); color: var(--color-ink); }
+  html { background: #ffffff; color: var(--color-ink); }
   body { font-family: var(--font-sans); font-size: 14px; line-height: 1.6; min-height: 100dvh; -webkit-font-smoothing: antialiased; }
   * { border-color: var(--color-line); }
   :focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }
