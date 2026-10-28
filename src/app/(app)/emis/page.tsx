@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Calendar, Plus } from "@phosphor-icons/react";
 import { Button } from "@/components/atoms";
 import { EmptyState, RowSkeleton, StatCard, StatSkeleton } from "@/components/molecules";
-import { EmiCard, EmiForm } from "@/components/organisms";
+import { EmiCard, EmiForm, PayoffPlanner } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { api, type EmiInput, type EmiView, useAct, useEmis } from "@/lib/api";
 import { inr } from "@/lib/money";
@@ -44,6 +44,8 @@ export default function Emis() {
           items.map((e) => <EmiCard key={e.id} emi={e} onEdit={() => setForm(e)} />)
         )}
       </div>
+
+      <PayoffPlanner />
 
       {form !== undefined && <EmiForm key={form?.id ?? "new"} initial={form ?? undefined} onSave={save} onClose={() => setForm(undefined)} />}
     </PageLayout>

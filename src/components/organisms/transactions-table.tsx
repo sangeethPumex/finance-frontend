@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowDownLeft, ArrowsLeftRight, ArrowUpRight, ArrowUUpLeft, CalendarCheck, CreditCard, Money, type Icon } from "@phosphor-icons/react";
+import { ArrowDownLeft, ArrowsLeftRight, ArrowUpRight, ArrowUUpLeft, CalendarCheck, CreditCard, HandCoins, Money, PencilSimple, type Icon } from "@phosphor-icons/react";
 import { api, useWrite, type Account, type Card, type Category, type Txn } from "@/lib/api";
 import { shortDateTime } from "@/lib/dates";
 import { inr } from "@/lib/money";
 import { cn } from "@/lib/cn";
 import { isDebit, signed, sourceLabel, vendorLabel } from "@/lib/txn";
 import { Button, Select } from "../atoms";
+import { OwedDialog } from "./owed-dialog";
 import { InlineError } from "../molecules";
 import { DataTable, type Column } from "./data-table";
 
@@ -38,6 +39,50 @@ function ReviewCell({ t, categories }: { t: Txn; categories: Category[] }) {
   );
 }
 
+const CARD_PAYMENTS = "Credit card payments";
+
+/**
+ * Category of one transaction. Dropdowns show only while a choice is missing (no category, or a card payment without its card) or while
+ * editing; once settled it reads as text with a pencil. Under "Credit card payments" money going out also names the card it paid.
+ */
+function CategoryCell({ t, categories, cards }: { t: Txn; categories: Category[]; cards: Card[] }) {
+  const [editing, setEditing] = useState(false);
+  const patch = useWrite((body: { category_id?: string; paid_card_id?: string }) => api(`/transactions/${t.id}`, { method: "PATCH", body }));
+  const cat = categories.find((c) => c.id === t.category_id);
+  const needsCard = cat?.name === CARD_PAYMENTS && isDebit(t) !== false;
+  const card = cards.find((c) => c.id === t.paid_card_id);
+  const pickCategory = !cat || editing, pickCard = needsCard && (!card || editing);
+  const done = () => setEditing(false);
+
+  if (!pickCategory && !pickCard) {
+    return (
+      <span className="flex items-center gap-1.5 text-muted">
+        {cat?.name}{needsCard && card && <> → <span className="font-medium text-ink">{card.name}{card.last4 && ` ••${card.last4}`}</span></>}
+        <button type="button" aria-label="Change category" onClick={() => setEditing(true)} className="text-muted hover:text-ink"><PencilSimple size={13} /></button>
+      </span>
+    );
+  }
+  return (
+    <span className="flex flex-wrap items-center gap-1.5">
+      {pickCategory && (
+        <Select size="sm" value={t.category_id ?? ""} disabled={patch.isPending} aria-label="Category"
+          onChange={(e) => e.target.value && patch.mutate({ category_id: e.target.value }, { onSuccess: () => categories.find((c) => c.id === e.target.value)?.name !== CARD_PAYMENTS && done() })}>
+          {!t.category_id && <option value="">Category…</option>}
+          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </Select>
+      )}
+      {pickCard && (
+        <Select size="sm" value={t.paid_card_id ?? ""} disabled={patch.isPending} aria-label="Card paid" onChange={(e) => e.target.value && patch.mutate({ paid_card_id: e.target.value }, { onSuccess: done })}>
+          <option value="">Which card?</option>
+          {cards.map((c) => <option key={c.id} value={c.id}>{c.name}{c.last4 && ` ••${c.last4}`}</option>)}
+        </Select>
+      )}
+      {editing && <button type="button" onClick={done} className="text-[11px] text-muted hover:text-ink">Cancel</button>}
+      <InlineError error={patch.error} />
+    </span>
+  );
+}
+
 export type TransactionsTableProps = {
   txns: Txn[];
   accounts: Account[];
@@ -48,6 +93,7 @@ export type TransactionsTableProps = {
 };
 
 export function TransactionsTable({ txns, accounts, cards, categories, loading, emptyText = "No transactions yet" }: TransactionsTableProps) {
+  const [owing, setOwing] = useState<Txn | null>(null);
   const columns: Column<Txn>[] = [
     { key: "date", header: "Date", cell: (t) => <span className="whitespace-nowrap text-muted">{shortDateTime(t.received_at ?? t.occurred_at)}</span> },
     {
@@ -60,10 +106,22 @@ export function TransactionsTable({ txns, accounts, cards, categories, loading, 
       header: "Category",
       cell: (t) => t.needs_review
         ? <ReviewCell t={t} categories={categories} />
-        : <span className="text-muted">{categories.find((c) => c.id === t.category_id)?.name ?? "—"}</span>,
+        : <CategoryCell t={t} categories={categories} cards={cards} />,
     },
     { key: "account", header: "Account", cell: (t) => <span className="text-muted">{sourceLabel(t, accounts, cards)}</span> },
     { key: "amount", header: "Amount", align: "right", cell: (t) => <span className={cn("num font-medium", isDebit(t) === false ? "text-gain" : isDebit(t) ? "text-loss" : "text-sub")}>{signed(t) > 0 ? "+" : ""}{inr(signed(t))}</span> },
+    {
+      key: "owed",
+      header: "",
+      cell: (t) => t.owed_paise
+        ? <button type="button" onClick={() => setOwing(t)} className="whitespace-nowrap text-[12px] font-medium text-warn hover:underline">{t.owed_from} owes {inr(t.owed_paise - (t.repaid_paise ?? 0))}</button>
+        : isDebit(t) ? <button type="button" aria-label="Mark as paid for someone" title="Paid for someone? Track what they owe you" onClick={() => setOwing(t)} className="text-muted hover:text-ink"><HandCoins size={16} /></button> : null,
+    },
   ];
-  return <DataTable columns={columns} rows={txns} rowKey={(t) => t.id} loading={loading} emptyIcon={ArrowsLeftRight} emptyText={emptyText} />;
+  return (
+    <>
+      <DataTable columns={columns} rows={txns} rowKey={(t) => t.id} loading={loading} emptyIcon={ArrowsLeftRight} emptyText={emptyText} />
+      {owing && <OwedDialog key={owing.id} txn={owing} onClose={() => setOwing(null)} />}
+    </>
+  );
 }

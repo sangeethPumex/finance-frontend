@@ -12,11 +12,12 @@ const KINDS: { kind: CardKind; label: string; hint: string; icon: typeof CreditC
   { kind: "paylater", label: "Pay later", hint: "Amazon Pay Later, Simpl and similar", icon: HandCoins, placeholder: "Amazon Pay Later" },
 ];
 
-type Draft = { name: string; bank: string; last4: string; limit: string; billingDay: string; dueDay: string; outstanding: string; sharedWith: string };
+type Draft = { name: string; bank: string; last4: string; limit: string; billingDay: string; dueDay: string; apr: string; outstanding: string; sharedWith: string };
 const rupees = (paise?: number) => (paise ? String(paise / 100) : "");
 const toDraft = (c?: Card): Draft => ({
   name: c?.name ?? "", bank: c?.bank ?? "", last4: c?.last4 ?? "", limit: rupees(c?.limit_paise),
   billingDay: c?.billing_day ? String(c.billing_day) : "", dueDay: c?.due_day ? String(c.due_day) : "",
+  apr: c?.apr ? String(c.apr) : "",
   outstanding: c?.outstanding_paise !== undefined ? String(c.outstanding_paise / 100) : "", sharedWith: c?.shared_with ?? "",
 });
 const day = (v: string) => (v.trim() === "" ? 0 : Math.round(Number(v)));
@@ -33,12 +34,13 @@ export function CardForm({ initial, onSave, onClose, pending }: { initial?: Card
   const hasSharers = (initial?.shared_cards.length ?? 0) > 0 && !initial?.shared_with;
   const sharing = d.sharedWith !== "";
   const limit = d.limit.trim() === "" ? 0 : Number(d.limit), outstanding = d.outstanding.trim() === "" ? undefined : Number(d.outstanding);
-  const ok = d.name.trim() !== "" && /^(\d{4})?$/.test(d.last4) && Number.isFinite(limit) && limit >= 0 && validDay(day(d.billingDay)) && validDay(day(d.dueDay)) &&
+  const apr = d.apr.trim() === "" ? 0 : Number(d.apr);
+  const ok = d.name.trim() !== "" && Number.isFinite(apr) && apr >= 0 && apr <= 100 && /^(\d{4})?$/.test(d.last4) && Number.isFinite(limit) && limit >= 0 && validDay(day(d.billingDay)) && validDay(day(d.dueDay)) &&
     (outstanding === undefined || (Number.isFinite(outstanding) && outstanding >= 0));
   const spec = KINDS.find((k) => k.kind === kind)!;
 
   const build = (): CardInput => ({
-    name: d.name.trim(), kind, bank: d.bank.trim(), last4: d.last4, limit_paise: sharing ? 0 : Math.round(limit * 100), shared_with: sharing ? d.sharedWith : initial ? "" : undefined, billing_day: day(d.billingDay), due_day: day(d.dueDay),
+    name: d.name.trim(), kind, bank: d.bank.trim(), last4: d.last4, limit_paise: sharing ? 0 : Math.round(limit * 100), shared_with: sharing ? d.sharedWith : initial ? "" : undefined, billing_day: day(d.billingDay), due_day: day(d.dueDay), apr,
     // editing: a blank clears the manual figure (negative); adding: simply leave it out
     outstanding_paise: outstanding === undefined ? (initial ? -1 : undefined) : Math.round(outstanding * 100),
   });
@@ -79,6 +81,7 @@ export function CardForm({ initial, onSave, onClose, pending }: { initial?: Card
               : <FormField label="Credit limit (₹)" icon={Gauge} className="col-span-2"><Input type="number" min={0} step="any" value={d.limit} onChange={set("limit")} placeholder="100000" /></FormField>}
             <FormField label="Billing date" icon={Receipt} hint="Day the statement is generated"><Input type="number" min={1} max={31} value={d.billingDay} onChange={set("billingDay")} placeholder="15" /></FormField>
             <FormField label="Last date to pay" icon={CalendarCheck} hint="Payment due day"><Input type="number" min={1} max={31} value={d.dueDay} onChange={set("dueDay")} placeholder="5" /></FormField>
+            <FormField label="Interest rate (% a year)" icon={Gauge} className="col-span-2" hint="Used to estimate interest on an unpaid bill. Blank assumes 42%"><Input type="number" min={0} max={100} step="any" value={d.apr} onChange={set("apr")} placeholder="42" /></FormField>
             <FormField label="Outstanding per app (₹)" icon={Wallet} className="col-span-2"
               hint={kind === "paylater" ? "Pay later SMS rarely carry a card number, so enter what the app shows" : "Optional. Overrides the estimate worked out from your transactions"}>
               <Input type="number" min={0} step="any" value={d.outstanding} onChange={set("outstanding")} />

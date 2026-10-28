@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight, Bank, Calendar, CalendarCheck, ChartLineUp, Gauge, HandCoins, PiggyBank, Sparkle, SquaresFour, Timer, TrendUp, Wallet } from "@phosphor-icons/react";
+import { ArrowDownLeft, ArrowUpRight, Bank, Calendar, CalendarCheck, CalendarDots, ChartLineUp, Gauge, HandCoins, PiggyBank, Sparkle, SquaresFour, Timer, TrendUp, Wallet } from "@phosphor-icons/react";
 import { Button } from "@/components/atoms";
 import { Card, Meter, PanelSkeleton, StatCard, StatSkeleton, Tabs } from "@/components/molecules";
 import { AccountBalances, CashflowPanel, NetWorthChart, RecentActivity, SpendingHeatmap } from "@/components/organisms";
@@ -110,7 +110,7 @@ export default function Dashboard() {
       </Section>
 
       <Section n="04" title="Upcoming commitments">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
           <StatCard label="Next Salary" icon={CalendarCheck} href="/profile" tone={u.salaryPaise > 0 ? "good" : "neutral"} value={u.salaryPaise > 0 ? `${u.daysToSalary} days` : "–"}
             sub={u.salaryPaise > 0 ? `${inr(u.salaryPaise)} expected on the ${u.salaryDay}th. Change in About Me` : "Set salary in About Me"} />
           <StatCard label="SIPs" icon={ChartLineUp} href="/funds" tone={u.nextSip && u.nextSip.days <= 3 ? "warn" : "info"} value={u.sipMonthlyPaise > 0 ? `${inr(u.sipMonthlyPaise)} / mo` : "–"}
@@ -119,6 +119,8 @@ export default function Dashboard() {
             sub={u.emiActive ? `${u.emiActive} active · ${inr(u.emiOutstandingPaise)} outstanding${u.nextEmi ? ` · next in ${u.nextEmi.days}d` : ""}` : "Add loans on the EMIs page"}>
             {u.emiShare > 0 && <Meter ratio={u.emiShare} tone={u.emiTone} />}
           </StatCard>
+          <StatCard label="Mandates · 90 days" icon={CalendarDots} href="/mandates" tone={d.mandates.due.length ? "warn" : "neutral"} value={d.mandates.due.length ? inr(d.mandates.next90Paise) : "–"}
+            sub={d.mandates.due.length ? `${d.mandates.due.slice(0, 3).map((o) => `${o.name} in ${o.days}d`).join(" · ")}${d.mandates.due.length > 3 ? ` · +${d.mandates.due.length - 3} more` : ""}` : "Add insurance, fees and other must-pay items"} />
           <StatCard label="Runway" icon={Timer} tone={u.runwayTone} value={u.runwayDays === undefined ? "Sustainable" : `~${u.runwayDays} days`}
             sub={u.runwayDays === undefined ? `Income covers outgoings (${inr(u.monthlyNetPaise)} / month net)` : `${inr(p.cashPaise)} cash ÷ ${inr(u.monthlyBurnPaise)} net burn a month`} />
           <StatCard label="Today's Budget" icon={Gauge} tone={u.dailyTone} value={u.dailyTargetPaise > 0 ? inr(u.dailyTargetPaise) : "–"}

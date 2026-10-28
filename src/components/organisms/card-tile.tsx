@@ -39,6 +39,7 @@ export function CardTile({ card: c, onEdit }: { card: Card; onEdit: () => void }
   const Icon = c.kind === "paylater" ? HandCoins : CreditCard;
   const hasLimit = !!c.limit_paise;
   const linkedActive = c.linked_emis.filter((e) => e.active).length;
+  const st = c.statement;
 
   return (
     <div className="border border-line bg-white">
@@ -71,6 +72,12 @@ export function CardTile({ card: c, onEdit }: { card: Card; onEdit: () => void }
           <Fact icon={CalendarCheck} label="Pay by">{c.due_day ? <>{ord(c.due_day)}<span className="block text-[11px] font-normal text-muted">{c.days_to_due !== undefined && inDays(c.days_to_due)}</span></> : <span className="text-muted">Not set</span>}</Fact>
           <Fact icon={ShoppingBag} label="This cycle"><span className="num">{inr(c.cycle_spent_paise)}</span><span className="block text-[11px] font-normal text-muted">{c.cycle_txns} spend{c.cycle_txns === 1 ? "" : "s"}</span></Fact>
         </div>
+        {st && st.unpaid_paise > 0 && (
+          <div className={cn("mt-4 px-3 py-2 text-[12px]", st.overdue ? "bg-loss-bg text-loss" : st.remind ? "bg-warn/10 text-warn" : "bg-tint text-sub")}>
+            <span className="font-semibold">Pay {inr(st.unpaid_paise)} in full</span> {st.overdue ? `· overdue by ${-st.days_to_due} day${st.days_to_due === -1 ? "" : "s"}` : `by ${shortDate(st.due_date)}`}
+            <span className="block text-[11px] opacity-80">Otherwise about {inr(st.interest_if_min_paise)} interest next month</span>
+          </div>
+        )}
         {linkedActive > 0 && (
           <div className="mt-4 flex items-center gap-1.5 bg-tint px-3 py-2 text-[12px] text-sub">
             <LinkSimple size={14} weight="bold" className="text-muted" />
@@ -99,6 +106,14 @@ export function CardTile({ card: c, onEdit }: { card: Card; onEdit: () => void }
                   ...(c.shared_cards.length > 0 ? [["Shared limit", `${c.shared_with_name ? `Drawn from ${c.shared_with_name}` : "Held by this card"} · with ${c.shared_cards.join(", ")}`], ["Group used", inr(c.group_used_paise ?? 0)]] as const : []),
                   ["Statement date", c.billing_day ? `${ord(c.billing_day)} of every month${c.days_to_billing !== undefined ? ` · ${inDays(c.days_to_billing)}` : ""}` : "Not set"],
                   ["Last date to pay", c.due_day ? `${ord(c.due_day)} of every month${c.days_to_due !== undefined ? ` · ${inDays(c.days_to_due)}` : ""}` : "Not set"],
+                  ...(st ? [
+                    [`Last statement (${shortDate(st.to)})`, inr(st.billed_paise)],
+                    ["Paid since", inr(st.paid_paise)],
+                    ["Pay in full", `${inr(st.unpaid_paise)} by ${shortDate(st.due_date)}`],
+                    ["Minimum due", inr(st.min_due_paise)],
+                    [`Interest if only minimum (${st.apr}% a year)`, inr(st.interest_if_min_paise)],
+                    ["Interest if unpaid", inr(st.interest_if_skipped_paise)],
+                  ] as const : []),
                   ["Cycle started", shortDate(c.cycle_start)],
                   ["Spends this cycle", `${inr(c.cycle_spent_paise)} · ${c.cycle_txns} transaction${c.cycle_txns === 1 ? "" : "s"}`],
                   ["Linked loans", `${inr(c.linked_left_paise)} left · ${inr(c.linked_monthly_paise)}/mo`],

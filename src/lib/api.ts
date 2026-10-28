@@ -25,14 +25,25 @@ export type Card = {
   cycle_start: string; cycle_spent_paise: number; cycle_txns: number;
   linked_emis: LinkedEmi[]; linked_monthly_paise: number; linked_left_paise: number;
   used_paise: number; available_paise?: number; utilisation?: number; days_to_billing?: number; days_to_due?: number;
+  apr?: number; statement?: Statement;
 };
-export type CardInput = { name: string; kind: CardKind; bank?: string; last4?: string; limit_paise?: number; billing_day?: number; due_day?: number; outstanding_paise?: number; shared_with?: string };
+/** The last closed bill and what is still owed on it (estimated from transactions). */
+export type Statement = {
+  from: string; to: string; billed_paise: number; paid_paise: number; unpaid_paise: number; min_due_paise: number;
+  due_date: string; days_to_due: number; overdue: boolean; remind: boolean; apr: number;
+  interest_if_min_paise: number; interest_if_skipped_paise: number;
+};
+export type CardInput = { name: string; kind: CardKind; bank?: string; last4?: string; limit_paise?: number; billing_day?: number; due_day?: number; apr?: number; outstanding_paise?: number; shared_with?: string };
 export type Category = { id: string; name: string };
 export type Vendor = { id: string; name: string; category_id?: string; aliases: string[] };
 export type Txn = {
   id: string; type: string; amount_paise: number; occurred_at: string; received_at?: string; direction?: "debit" | "credit";
   bank?: string; account_last4?: string; account_id?: string; card_id?: string;
+  /** The credit card this payment settled (category "Credit card payments"). */
+  paid_card_id?: string;
   raw_vendor?: string; upi_id?: string; vendor_id?: string; category_id?: string;
+  /** Paid for someone else: how much of this payment they owe back, and how much has come back. Not counted as the user's spend. */
+  owed_from?: string; owed_paise?: number; repaid_paise?: number;
   needs_review: boolean; review_reason?: string; suggested_category_id?: string;
 };
 
@@ -70,10 +81,13 @@ export const useAccountTxns = (id: string) => useQuery({ queryKey: ["transaction
 export const useCategories = list<Category>("categories");
 export const useVendors = list<Vendor>("vendors");
 export const useSummary = () => useQuery({ queryKey: ["summary"], queryFn: () => api<Summary>("/summary") });
-export const useTransactions = (needsReview?: boolean) =>
+/** Narrows the transaction list; blanks are ignored. Dates are YYYY-MM-DD, min and max are rupees. */
+export type TxnFilter = Partial<Record<"q" | "category_id" | "account_id" | "direction" | "from" | "to" | "min" | "max", string> & { needs_review: boolean; owed: boolean }>;
+export const useTransactions = (f: TxnFilter = {}, limit = 100) =>
   useQuery({
-    queryKey: ["transactions", needsReview],
-    queryFn: () => api<Txn[]>(`/transactions?limit=100${needsReview ? "&needs_review=true" : ""}`),
+    queryKey: ["transactions", f, limit],
+    queryFn: () => api<Txn[]>(`/transactions?${new URLSearchParams([["limit", String(limit)], ...Object.entries(f).filter(([, v]) => v).map(([k, v]) => [k, String(v)])])}`),
+    placeholderData: (prev) => prev, // keep the old rows while a typed search loads
   });
 
 /** Runs a write, then refetches everything (accounts balances, transactions and vendors all depend on each other). */
@@ -104,6 +118,9 @@ export type Dashboard = {
     dailyTargetPaise: number; todaySpentPaise: number; dailyTone: Tone; committedDuePaise: number;
     bufferTargetPaise: number; bufferRatio?: number; bufferTone: Tone; avgDailySpendPaise: number;
   };
+  /** What falls due in the next 90 days (see Mandates). */
+  owedToYouPaise: number;
+  mandates: { next30Paise: number; next90Paise: number; setAsidePaise: number; due: MandateOcc[] };
   recent: TxnView[];
   needsProfile: boolean;
 };
@@ -157,6 +174,28 @@ export const useEmiImpact = (id: string, extra: number) =>
     queryFn: () => api<{ available: boolean; interestSaved?: number; monthsSaved?: number; monthsLeft?: number }>(`/emis/${id}/impact?extra=${extra}`),
     enabled: extra > 0,
   });
+
+export type Strategy = {
+  method: "scheduled" | "avalanche" | "snowball"; months: number; interest: number; neverEnds: boolean;
+  order: { name: string; month: number }[]; interestSaved: number; monthsSaved: number;
+};
+export type PayoffPlan = { extra: number; debts: { id: string; name: string; balance: number; rate: number; min: number }[]; strategies: Strategy[] };
+export const usePayoffPlan = (extra: number) =>
+  useQuery({ queryKey: ["emi-payoff", extra], queryFn: () => api<PayoffPlan>(`/emis/payoff?extra=${extra}`), placeholderData: (p) => p });
+
+// ---- Mandates: payments that must be made; money is paise, dates are YYYY-MM-DD (IST) ----
+export type Frequency = "monthly" | "quarterly" | "yearly" | "one-off";
+export type MandateInput = { name: string; amount_paise: number; frequency: Frequency; next_due: string; account_id?: string; category_id?: string };
+export type Mandate = Required<Pick<MandateInput, "name" | "amount_paise" | "frequency" | "next_due">> & {
+  id: string; account_id?: string; category_id?: string;
+  /** The next date it falls due from today; absent for a one-off that has passed. */
+  next?: string; days: number; set_aside_paise: number;
+};
+export type MandateOcc = { id: string; name: string; paise: number; date: string; days: number };
+export type MandatePlan = { items: Mandate[]; calendar: MandateOcc[]; next30_paise: number; next90_paise: number; year_paise: number; set_aside_paise: number };
+export type MandateSuggestion = Omit<MandateInput, "account_id" | "category_id"> & { count: number };
+export const useMandates = () => useQuery({ queryKey: ["mandates"], queryFn: () => api<MandatePlan>("/mandates") });
+export const useMandateSuggestions = () => useQuery({ queryKey: ["mandate-suggestions"], queryFn: () => api<MandateSuggestion[]>("/mandates/suggestions") });
 
 // ---- Mutual funds ----
 export type FundType = "Equity" | "Debt" | "Metal" | "Foreign";
