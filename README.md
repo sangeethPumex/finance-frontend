@@ -10,7 +10,7 @@ cp .env.example .env.local   # fill in values
 npm run dev
 ```
 
-- `API_BASE_URL`: the backend, e.g. `http://localhost:8081`. `API_SECRET`: the backend's `API_SECRET`.
+- `API_BASE_URL`: the backend including its prefix, e.g. `http://localhost:8081/finance/api`. `API_SECRET`: the backend's `API_SECRET`.
 - Sign in with `AUTH_PASSPHRASE`. `SESSION_SECRET` signs the cookie (any long random string).
 
 Pages: Dashboard, Accounts, Cards, Transactions, Categories, Vendors.
