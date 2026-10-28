@@ -29,3 +29,4 @@ export * from "./edit-dialog";
 export * from "./fund-row";
 export * from "./rebalance-dialog";
 export * from "./genius-sip-dialog";
+export * from "./position-panel";

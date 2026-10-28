@@ -5,16 +5,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DotsThreeCircle, SignOut } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
-import type { NavLink } from "@/lib/nav";
+import type { NavGroup } from "@/lib/nav";
 import { Modal } from "../molecules";
 
 const PRIMARY = ["/", "/accounts", "/emis", "/transactions"];
 
 /** iPhone-style bottom tab bar: four main pages and a More sheet for the rest. Hidden from md up, where the sidebar takes over. */
-export function MobileNav({ groups, onSignOut }: { groups: NavLink[][]; onSignOut: () => void }) {
+export function MobileNav({ groups, onSignOut }: { groups: NavGroup[]; onSignOut: () => void }) {
   const path = usePathname();
   const [more, setMore] = useState(false);
-  const all = groups.flat(), main = PRIMARY.map((h) => all.find((l) => l.href === h)!), rest = all.filter((l) => !PRIMARY.includes(l.href));
+  const all = groups.flatMap((g) => g.links), main = PRIMARY.map((h) => all.find((l) => l.href === h)!), rest = all.filter((l) => !PRIMARY.includes(l.href));
   const on = (h: string) => (h === "/" ? path === "/" : path.startsWith(h));
   const tab = "flex flex-col items-center gap-0.5 pt-2 text-[10px]";
 

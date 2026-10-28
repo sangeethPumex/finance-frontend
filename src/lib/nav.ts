@@ -1,24 +1,31 @@
 import { ArrowsLeftRight, Bank, ChartLineUp, ChartPie, Calendar, CalendarDots, CreditCard, HandCoins, SquaresFour, UserCircle, Sparkle, Storefront, Tag, type Icon } from "@phosphor-icons/react";
 
 export type NavLink = { href: string; label: string; icon: Icon; ai?: boolean };
+export type NavGroup = { title: string; links: NavLink[] };
 
-/** Two groups split by a divider: money views, then the lookups behind them. */
-export const NAV_GROUPS: NavLink[][] = [
-  [
+/** Sidebar sections, each under a small heading. */
+export const NAV_GROUPS: NavGroup[] = [
+  { title: "Overview", links: [
     { href: "/", label: "Dashboard", icon: SquaresFour },
+    { href: "/ai", label: "AI Expert", icon: Sparkle, ai: true },
+  ] },
+  { title: "Money", links: [
     { href: "/accounts", label: "Accounts", icon: Bank },
+    { href: "/transactions", label: "Transactions", icon: ArrowsLeftRight },
+    { href: "/cards", label: "Credit Cards", icon: CreditCard },
+  ] },
+  { title: "Commitments", links: [
+    { href: "/mandates", label: "Mandates", icon: CalendarDots },
+    { href: "/emis", label: "EMIs", icon: Calendar },
+    { href: "/owed", label: "Owed to Me", icon: HandCoins },
+  ] },
+  { title: "Investments", links: [
     { href: "/funds", label: "Mutual Funds", icon: ChartPie },
     { href: "/stocks", label: "Stocks", icon: ChartLineUp },
-    { href: "/emis", label: "EMIs", icon: Calendar },
-    { href: "/mandates", label: "Mandates", icon: CalendarDots },
-    { href: "/owed", label: "Owed to Me", icon: HandCoins },
-    { href: "/cards", label: "Credit Cards", icon: CreditCard },
-    { href: "/ai", label: "AI Expert", icon: Sparkle, ai: true },
-    { href: "/profile", label: "About Me", icon: UserCircle },
-    { href: "/transactions", label: "Transactions", icon: ArrowsLeftRight },
-  ],
-  [
+  ] },
+  { title: "Setup", links: [
     { href: "/categories", label: "Categories", icon: Tag },
     { href: "/vendors", label: "Vendors", icon: Storefront },
-  ],
+    { href: "/profile", label: "About Me", icon: UserCircle },
+  ] },
 ];

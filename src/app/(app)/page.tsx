@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight, Bank, Calendar, CalendarCheck, CalendarDots, ChartLineUp, Gauge, HandCoins, PiggyBank, Sparkle, SquaresFour, Timer, TrendUp, Wallet } from "@phosphor-icons/react";
+import { ArrowDownLeft, ArrowUpRight, Calendar, CalendarCheck, CalendarDots, ChartLineUp, Gauge, PiggyBank, Sparkle, SquaresFour, Timer, Wallet } from "@phosphor-icons/react";
 import { Button } from "@/components/atoms";
 import { Card, Meter, PanelSkeleton, StatCard, StatSkeleton, Tabs } from "@/components/molecules";
-import { AccountBalances, CashflowPanel, NetWorthChart, RecentActivity, SpendingHeatmap } from "@/components/organisms";
+import { AccountBalances, CashflowPanel, NetWorthChart, PositionPanel, RecentActivity, SpendingHeatmap } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { type PeriodKey, fetchAdvice, useAccounts, useDashboard } from "@/lib/api";
 import { inr } from "@/lib/money";
@@ -13,7 +13,6 @@ import { inr } from "@/lib/money";
 const PERIODS: { value: PeriodKey; label: string }[] = [
   { value: "month", label: "This month" }, { value: "last", label: "Last month" }, { value: "3m", label: "3 months" }, { value: "custom", label: "Custom" },
 ];
-const pct = (r: number) => `${r >= 0 ? "+" : ""}${(r * 100).toFixed(1)}%`;
 const Section = ({ n, title, children }: { n: string; title: string; children: React.ReactNode }) => (
   <section className="mt-9">
     <div className="mb-3 flex items-center gap-3"><span className="num text-[11px] font-semibold text-faint">{n}</span><h2 className="text-[13px] font-semibold tracking-tight">{title}</h2><span className="h-px flex-1 bg-line" /></div>
@@ -63,7 +62,6 @@ export default function Dashboard() {
   }
 
   const { position: p, cashflow: c, upcoming: u } = d;
-  const pnlTone = p.pnlPaise > 0 ? "good" : p.pnlPaise < 0 ? "bad" : "info";
   const netTone = c.netPaise > 0 ? "good" : c.netPaise < 0 ? "bad" : "neutral";
   const A = accounts.data ?? [];
 
@@ -76,17 +74,7 @@ export default function Dashboard() {
       )}
 
       <Section n="01" title="Financial position">
-        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
-          <StatCard label="Net Worth" icon={Wallet} href="/profile" value={inr(p.netWorthPaise)}
-            sub={`${inr(p.cashPaise)} cash · ${inr(p.currentPaise)} invested`} />
-          <StatCard label="Cash" icon={Bank} href="/accounts" value={inr(p.cashPaise)} sub={`Across ${p.accounts} account${p.accounts === 1 ? "" : "s"}`} />
-          <StatCard label="Investments" icon={ChartLineUp} href={p.usesFunds ? "/funds" : "/profile"} value={inr(p.currentPaise)} tone={pnlTone}
-            sub={p.investedPaise > 0 ? `${inr(p.investedPaise)} invested · ${p.pnlPaise >= 0 ? "+" : ""}${inr(p.pnlPaise)} (${pct(p.pnlPaise / p.investedPaise)})` : "Add holdings in About Me"} />
-          <StatCard label="Owed" icon={HandCoins} href="/emis" tone={p.liabilitiesPaise > 0 ? "warn" : "neutral"} value={inr(p.liabilitiesPaise)} sub="Outstanding EMIs and loans. Not deducted from net worth" />
-          <StatCard label="Since Last Month" icon={TrendUp} tone={p.netWorthChangePaise === undefined ? "neutral" : p.netWorthChangePaise >= 0 ? "good" : "bad"}
-            value={p.netWorthChangePaise === undefined ? "–" : `${p.netWorthChangePaise >= 0 ? "+" : ""}${inr(p.netWorthChangePaise)}`}
-            sub={p.netWorthChangeSince ? `Net worth vs ${new Date(`${p.netWorthChangeSince}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" })}` : "No month-end recorded yet"} />
-        </div>
+        <PositionPanel p={p} />
       </Section>
 
       <Section n="02" title="Net-worth trajectory">
