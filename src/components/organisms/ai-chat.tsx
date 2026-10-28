@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { PaperPlaneRight, Sparkle, Stop, Trash } from "@phosphor-icons/react";
+import { ArrowClockwise, Check, Copy, PaperPlaneRight, Sparkle, Stop, Trash } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { Button } from "../atoms";
 
@@ -21,16 +21,20 @@ export function AiChat() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const abort = useRef<AbortController | null>(null);
-  const bottom = useRef<HTMLDivElement>(null);
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" }), [msgs]);
-  useEffect(() => () => abort.current?.abort(), []);
+  const box = useRef<HTMLTextAreaElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
+  const stick = useRef(true); // follow the stream only while the reader is at the bottom
+  const [copied, setCopied] = useState(-1);
+  useEffect(() => { const el = scroller.current; if (el && stick.current) el.scrollTop = el.scrollHeight; }, [msgs]);
+  useEffect(() => () => { abort.current?.abort(); }, []);
 
-  async function send(text: string) {
+  async function send(text: string, base: Msg[] = msgs) {
     const q = text.trim();
     if (!q || busy) return;
-    const history: Msg[] = [...msgs, { role: "user", content: q }];
+    stick.current = true;
+    const history: Msg[] = [...base, { role: "user", content: q }];
     setMsgs([...history, { role: "assistant", content: "" }]);
-    setInput(""); setError(""); setBusy(true);
+    setInput(""); if (box.current) box.current.style.height = "auto"; setError(""); setBusy(true);
     const ctl = (abort.current = new AbortController());
     try {
       const res = await fetch("/api/dashboard/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: history }), signal: ctl.signal });
@@ -50,36 +54,65 @@ export function AiChat() {
     }
   }
 
+  const GRAD = "bg-gradient-to-br from-orange-500 to-black";
+  const COL = "mx-auto w-full max-w-[880px] px-1 md:px-4";
+  const act = "grid size-7 place-content-center rounded-md text-muted hover:bg-tint hover:text-ink";
+  // Fills the viewport minus AppShell's padding (and the mobile nav), so only the conversation scrolls.
   return (
-    <div className="flex h-[calc(100dvh-11rem)] flex-col md:h-[calc(100dvh-9rem)]">
-      <div className="flex-1 space-y-4 overflow-y-auto pb-4">
-        {msgs.length === 0 ? (
-          <div className="grid h-full place-content-center justify-items-center gap-4 text-center">
-            <Sparkle size={28} weight="duotone" className="text-muted" />
-            <p className="text-[13px] text-muted">Ask anything about your money. Answers use this month&apos;s numbers and your About Me notes.</p>
-            <div className="flex max-w-xl flex-wrap justify-center gap-2">
-              {SUGGESTIONS.map((s) => <button key={s} type="button" onClick={() => send(s)} className="border border-line px-3 py-2 text-left text-[13px] text-sub transition-colors hover:bg-tint">{s}</button>)}
+    <div className="flex h-[calc(100dvh-7rem-env(safe-area-inset-bottom))] flex-col md:h-[calc(100dvh-6rem)]">
+      <header className="flex shrink-0 items-center gap-3 pb-4">
+        <span className={cn("grid size-9 place-content-center rounded-lg text-white", GRAD)}><Sparkle size={18} weight="fill" /></span>
+        <div>
+          <h1 className="text-[18px] font-semibold leading-tight text-ink">AI Expert</h1>
+          <p className="text-[13px] text-muted">Your personal financial analyst</p>
+        </div>
+      </header>
+      <div ref={scroller} onScroll={(e) => { const el = e.currentTarget; stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }} className="min-h-0 flex-1 overflow-y-auto border-t border-line-soft">
+        <div className={cn(COL, "flex min-h-full flex-col gap-6 py-6")}>
+          {msgs.length === 0 ? (
+            <div className="m-auto grid w-full justify-items-center gap-5 text-center">
+              <span className={cn("grid size-14 place-content-center rounded-2xl text-white shadow-lg shadow-orange-500/20", GRAD)}><Sparkle size={26} weight="fill" /></span>
+              <div>
+                <h2 className="text-[18px] font-semibold text-ink">What would you like to know?</h2>
+                <p className="mt-1 text-[13px] text-muted">Answers use this month&apos;s recorded numbers and your About Me notes.</p>
+              </div>
+              <div className="grid w-full gap-2 sm:grid-cols-2">
+                {SUGGESTIONS.map((q) => <button key={q} type="button" onClick={() => send(q)} className="rounded-xl border border-line bg-white px-4 py-3 text-left text-[13px] text-sub transition-colors hover:border-orange-400 hover:bg-orange-50">{q}</button>)}
+              </div>
             </div>
-          </div>
-        ) : msgs.map((m, i) => (
-          <div key={i} className={cn("flex", m.role === "user" && "justify-end")}>
-            <div className={cn("max-w-[92%] px-4 py-3 md:max-w-[75%]", m.role === "user" ? "whitespace-pre-wrap bg-ink text-[14px] text-white" : "border border-line bg-white text-sub")}>
-              {m.role === "user" ? m.content : m.content ? <div className={MD}><ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown></div> : <span className="animate-pulse text-muted">Thinking…</span>}
+          ) : msgs.map((m, i) => (
+            <div key={i} className={cn("group flex items-start gap-3", m.role === "user" && "justify-end")}>
+              {m.role === "assistant" && <span className={cn("mt-0.5 grid size-7 shrink-0 place-content-center rounded-lg text-white", GRAD)}><Sparkle size={14} weight="fill" /></span>}
+              <div className={cn("min-w-0", m.role === "user" ? "max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tr-sm bg-ink px-4 py-2.5 text-[14px] text-white" : "flex-1 pt-1 text-sub")}>
+                {m.role === "user" ? m.content : m.content ? <div className={MD}><ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown></div> : <span className="flex gap-1 py-2" aria-label="Thinking">{[0, 150, 300].map((d) => <i key={d} style={{ animationDelay: `${d}ms` }} className="size-1.5 animate-bounce rounded-full bg-orange-500" />)}</span>}
+                {m.role === "assistant" && m.content && !(busy && i === msgs.length - 1) && (
+                  <div className="mt-2 flex gap-1 opacity-100 transition-opacity focus-within:opacity-100 md:opacity-0 md:group-hover:opacity-100">
+                    <button type="button" aria-label="Copy answer" className={act} onClick={() => { void navigator.clipboard?.writeText(m.content); setCopied(i); setTimeout(() => setCopied(-1), 1500); }}>{copied === i ? <Check size={14} /> : <Copy size={14} />}</button>
+                    {i === msgs.length - 1 && <button type="button" aria-label="Try again" className={act} onClick={() => send(msgs[i - 1].content, msgs.slice(0, i - 1))}><ArrowClockwise size={14} /></button>}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-        <div ref={bottom} />
+          ))}
+        </div>
       </div>
-      {error && <p role="alert" className="pb-2 text-[13px] text-loss">{error}</p>}
-      <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="flex items-end gap-2 border-t border-line bg-white pt-3">
-        <textarea
-          value={input} onChange={(e) => setInput(e.target.value)} rows={1} aria-label="Ask a question" placeholder="Ask about your money…"
-          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
-          className="max-h-32 min-h-11 flex-1 resize-none border border-strong px-3 py-2.5 text-[16px] md:text-[14px]"
-        />
-        {busy ? <Button type="button" variant="ghost" size="icon" icon={Stop} aria-label="Stop" onClick={() => abort.current?.abort()} /> : <Button type="submit" size="icon" icon={PaperPlaneRight} aria-label="Send" disabled={!input.trim()} />}
-        {msgs.length > 0 && !busy && <Button type="button" variant="quiet" size="icon" icon={Trash} aria-label="Clear chat" onClick={() => { setMsgs([]); setError(""); }} />}
-      </form>
+      <div className="shrink-0 border-t border-line bg-white pb-1 pt-3">
+        <div className={COL}>
+          {error && <p role="alert" className="pb-2 text-[13px] text-loss">{error}</p>}
+          <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="flex items-end gap-2 rounded-2xl border border-strong bg-white p-2 focus-within:border-orange-500">
+            {msgs.length > 0 && !busy && <Button type="button" variant="quiet" size="icon" icon={Trash} aria-label="Clear chat" onClick={() => { setMsgs([]); setError(""); }} />}
+            <textarea
+              ref={box} value={input} rows={1} aria-label="Ask a question" placeholder="Ask about your money…"
+              onChange={(e) => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = `${e.target.scrollHeight}px`; }}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
+              className="max-h-40 min-h-10 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-[16px] outline-none focus-visible:outline-none md:text-[14px]"
+            />
+            {busy
+              ? <Button type="button" variant="ghost" size="icon" icon={Stop} aria-label="Stop" onClick={() => abort.current?.abort()} />
+              : <button type="submit" aria-label="Send" disabled={!input.trim()} className={cn("grid size-10 shrink-0 place-content-center rounded-xl text-white transition-opacity disabled:opacity-30", GRAD)}><PaperPlaneRight size={18} weight="fill" /></button>}
+          </form>
+        </div>
+      </div>
     </div>
   );
 }
