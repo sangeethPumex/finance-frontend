@@ -9,16 +9,16 @@ import { Button, Input, Select } from "../atoms";
 import { FormField, Modal } from "../molecules";
 
 export const KIND_ICON = { loan: Car, purchase: DeviceMobile, card: CreditCard } as const;
-export const KIND_LABEL: Record<EmiKind, string> = { loan: "Variable-rate loan", purchase: "Fixed instalments", card: "Credit card" };
+export const KIND_LABEL: Record<EmiKind, string> = { loan: "Loan", purchase: "Fixed instalments", card: "Credit card" };
 const KIND_HINT: Record<EmiKind, string> = {
   loan: "Car, home or personal loan. Interest accrues on the principal, so extra payments help.",
   purchase: "A phone, laptop or other purchase split into fixed instalments.",
   card: "A credit card balance you pay down each month.",
 };
 
-type Draft = { name: string; amount: string; dueDay: string; total: string; paid: string; rate: string; balance: string; original: string; cardId: string };
+type Draft = { name: string; amount: string; dueDay: string; total: string; paid: string; rate: string; balance: string; original: string; cardId: string; rateType: string };
 const str = (n?: number) => (n === undefined ? "" : String(n));
-const toDraft = (e?: EmiView): Draft => ({ name: e?.name ?? "", amount: str(e?.amount), dueDay: str(e?.dueDay), total: e?.total ? str(e.total) : "", paid: e ? str(e.paid) : "", rate: str(e?.rate), balance: str(e?.balance), original: str(e?.original), cardId: e?.cardId ?? "" });
+const toDraft = (e?: EmiView): Draft => ({ name: e?.name ?? "", amount: str(e?.amount), dueDay: str(e?.dueDay), total: e?.total ? str(e.total) : "", paid: e ? str(e.paid) : "", rate: str(e?.rate), balance: str(e?.balance), original: str(e?.original), cardId: e?.cardId ?? "", rateType: e?.rateType ?? "variable" });
 const opt = (v: string) => (v.trim() === "" ? undefined : Number(v));
 
 /** Add or edit an EMI: pick a type, fill the essentials (details are optional), review, save. The backend validates and stores it. */
@@ -36,12 +36,12 @@ export function EmiForm({ initial, onSave, onClose }: { initial?: EmiView; onSav
     (isCard ? balance !== undefined && balance >= 0 : total > 0 && paid >= 0 && paid <= total) &&
     [balance, rate, original].every((v) => v === undefined || (Number.isFinite(v) && v >= 0));
 
-  const build = (): EmiInput => ({ name: d.name.trim(), kind: kind!, amount, dueDay, total, paid: isCard ? 0 : paid, rate: kind === "loan" ? rate : undefined, balance, original, cardId: !isCard && d.cardId ? d.cardId : undefined });
+  const build = (): EmiInput => ({ name: d.name.trim(), kind: kind!, amount, dueDay, total, paid: isCard ? 0 : paid, rate: kind === "loan" ? rate : undefined, rateType: kind === "loan" && rate !== undefined ? (d.rateType as "fixed" | "variable") : undefined, balance, original, cardId: !isCard && d.cardId ? d.cardId : undefined });
   const rows: [string, string][] = [
     ["Type", KIND_LABEL[kind ?? "purchase"]], ["Monthly payment", inr(amount * 100)], ["Due day", `${dueDay}th`],
     ...(isCard ? [] : [["Instalments", `${paid} of ${total} paid`] as [string, string]]),
     ...(balance !== undefined ? [[isCard ? "Card balance" : kind === "loan" ? "Outstanding principal" : "Amount left", inr(balance * 100)] as [string, string]] : []),
-    ...(rate !== undefined && kind === "loan" ? [["Interest rate", `${rate}% a year`] as [string, string]] : []),
+    ...(rate !== undefined && kind === "loan" ? [["Interest rate", `${rate}% a year, ${d.rateType}`] as [string, string]] : []),
     ...(!isCard && d.cardId ? [["Charged to card", cards.find((c) => c.id === d.cardId)?.name ?? "Card"] as [string, string]] : []),
     ...(original !== undefined ? [[kind === "loan" ? "Original loan" : "Purchase price", inr(original * 100)] as [string, string]] : []),
   ];
@@ -101,7 +101,12 @@ export function EmiForm({ initial, onSave, onClose }: { initial?: EmiView; onSav
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <FormField label={kind === "loan" ? "Outstanding principal (₹)" : "Amount still to pay (₹)"} hint="From your latest statement"><Input type="number" min={0} step="any" value={d.balance} onChange={set("balance")} /></FormField>
                 <FormField label={kind === "loan" ? "Original loan (₹)" : "Purchase price (₹)"}><Input type="number" min={0} step="any" value={d.original} onChange={set("original")} /></FormField>
-                {kind === "loan" && <FormField label="Interest rate (% a year)" icon={Percent} hint="Enables extra-payment estimates"><Input type="number" min={0} step="any" value={d.rate} onChange={set("rate")} /></FormField>}
+                {kind === "loan" && <FormField label="Interest rate (% a year)" icon={Percent} hint="Enables the schedule and extra-payment estimates"><Input type="number" min={0} step="any" value={d.rate} onChange={set("rate")} /></FormField>}
+                {kind === "loan" && (
+                  <FormField label="Rate type" hint="Variable: the lender can reset it. Change the rate here when it does">
+                    <Select value={d.rateType} onChange={set("rateType")}><option value="variable">Variable</option><option value="fixed">Fixed</option></Select>
+                  </FormField>
+                )}
               </div>
             </details>
           )}

@@ -15,9 +15,9 @@ export function Modal({ title, subtitle, icon, onClose, children, wide }: { titl
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" aria-label={title} className={`max-h-[90dvh] w-full ${wide ? "max-w-[760px]" : "max-w-[520px]"} overflow-y-auto border border-line bg-white shadow-xl`}>
-        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-line bg-white px-6 py-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div role="dialog" aria-modal="true" aria-label={title} className={`max-h-[92dvh] w-full ${wide ? "sm:max-w-[760px]" : "sm:max-w-[520px]"} overflow-y-auto rounded-t-2xl border border-line bg-white pb-[env(safe-area-inset-bottom)] shadow-xl sm:rounded-lg`}>
+        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-line bg-white px-4 py-4 sm:px-6">
           {icon && <IconTile icon={icon} variant="solid" size="sm" />}
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-[17px] font-semibold leading-tight tracking-tight">{title}</h2>
@@ -25,7 +25,7 @@ export function Modal({ title, subtitle, icon, onClose, children, wide }: { titl
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="grid size-8 shrink-0 place-items-center rounded-md bg-loss/10 text-loss transition-colors hover:bg-loss hover:text-white"><X size={16} weight="bold" /></button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-4 sm:p-6">{children}</div>
       </div>
     </div>
   );

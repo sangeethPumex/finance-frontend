@@ -90,7 +90,7 @@ export type Flow = { id: string; name: string; tone: FlowTone; paise: number; co
 export type Next = { name: string; paise: number; days: number };
 export type Dashboard = {
   period: { key: string; from: string; to: string };
-  position: { cashPaise: number; accounts: number; netWorthPaise: number; investedPaise: number; currentPaise: number; pnlPaise: number; allocation: { name: string; paise: number }[]; usesFunds: boolean };
+  position: { cashPaise: number; accounts: number; netWorthPaise: number; liabilitiesPaise: number; netWorthChangePaise?: number; netWorthChangeSince?: string; investedPaise: number; currentPaise: number; pnlPaise: number; allocation: { name: string; paise: number }[]; usesFunds: boolean };
   cashflow: {
     incomePaise: number; spentPaise: number; investedPaise: number; netPaise: number; savingsRate?: number;
     sources: Flow[]; dests: Flow[]; earlierSpentPaise: number;
@@ -119,6 +119,14 @@ export const useDashboard = (period: PeriodKey, from: string, to: string) =>
     enabled: period !== "custom" || (!!from && !!to),
   });
 
+export type NWPoint = { date: string; netWorthPaise: number; owedPaise?: number; cashPaise?: number; investmentsPaise?: number; changePaise: number };
+export type NWRange = "1m" | "3m" | "6m" | "1y";
+export type NetWorth = { history: NWPoint[]; method: string; scenarios: { name: string; assumptions: string; points: NWPoint[] }[] };
+export const useNetWorth = (range: NWRange) => useQuery({ queryKey: ["networth", range], queryFn: () => api<NetWorth>(`/dashboard/networth?range=${range}`) });
+
+export type SpendDay = { date: string; paise: number; level: 0 | 1 | 2 | 3 | 4; top?: { vendor: string; category: string; paise: number } };
+export const useDailySpend = () => useQuery({ queryKey: ["daily-spend"], queryFn: () => api<SpendDay[]>("/dashboard/daily") });
+
 export const fetchAdvice = (period: PeriodKey, from: string, to: string) =>
   api<{ advice: string }>(`/dashboard/advice?${periodQuery(period, from, to)}`);
 
@@ -127,15 +135,22 @@ export type EmiKind = "loan" | "purchase" | "card";
 export type Payment = { id: string; date: string; kind: "emi" | "extra"; amount: number; principal: number; interest: number; fees: number; reduced: number };
 export type EmiView = {
   id: string; name: string; kind: EmiKind; amount: number; dueDay: number; total: number; paid: number;
-  rate?: number; balance?: number; original?: number; cardId?: string; cardName?: string; payments?: Payment[];
+  rate?: number; rateType?: "fixed" | "variable"; rates?: { from: string; rate: number }[]; balance?: number; original?: number; cardId?: string; cardName?: string; payments?: Payment[];
   active: boolean; left: number; instalmentsLeft: number; daysToDue: number; repaid?: number; paidPrincipal: number; paidInterest: number;
 };
-export type EmiInput = { name: string; kind: EmiKind; amount: number; dueDay: number; total: number; paid: number; rate?: number; balance?: number; original?: number; cardId?: string };
+export type EmiInput = { name: string; kind: EmiKind; amount: number; dueDay: number; total: number; paid: number; rate?: number; rateType?: "fixed" | "variable"; balance?: number; original?: number; cardId?: string };
 export type EmiSummary = {
   monthly: number; outstanding: number; activeCount: number; paidSoFar: number; principalPaid: number; interestPaid: number;
   next?: { name: string; amount: number; days: number };
 };
 export const useEmis = () => useQuery({ queryKey: ["emis"], queryFn: () => api<{ items: EmiView[]; summary: EmiSummary }>("/emis") });
+export type LoanRow = { from: string; to: string; paidOn: string; interest: number; emi: number; extra: number; principal: number; closing: number; future: boolean; rate: number; principalPct: number; interestPct: number };
+export type LoanTotals = { interest: number; emi: number; extra: number; principal: number };
+export type LoanSchedule = {
+  available: boolean; rows: LoanRow[]; past: LoanTotals; ahead: LoanTotals; rate: number; rateType: string; rates: { from: string; rate: number }[];
+  months: number; clearsOn: string; neverEnds: boolean; note: string;
+};
+export const useEmiSchedule = (id: string) => useQuery({ queryKey: ["emi-schedule", id], queryFn: () => api<LoanSchedule>(`/emis/${id}/schedule`) });
 export const useEmiImpact = (id: string, extra: number) =>
   useQuery({
     queryKey: ["emi-impact", id, extra],

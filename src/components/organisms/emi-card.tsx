@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { useIsMutating } from "@tanstack/react-query";
-import { CaretRight, CreditCard, CurrencyInr, DotsThreeVertical, HandCoins, Info, ListBullets, Percent, Receipt } from "@phosphor-icons/react";
+import { CaretRight, CreditCard, CurrencyInr, DotsThreeVertical, HandCoins, Percent, Receipt } from "@phosphor-icons/react";
 import { api, type EmiView, useAct, useEmiImpact } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { shortDate } from "@/lib/dates";
 import { inr } from "@/lib/money";
 import { Button, Input } from "../atoms";
-import { FormField, Meter, Modal, SectionTitle } from "../molecules";
+import { FormField, Meter, Modal, Tabs } from "../molecules";
 import { KIND_ICON, KIND_LABEL } from "./emi-form";
+import { LoanSchedule } from "./loan-schedule";
+import { RateHistory } from "./rate-history";
 
 const rs = (n: number) => inr(Math.round(n * 100));
 
@@ -39,6 +41,10 @@ function ExtraPayment({ emi, onClose }: { emi: EmiView; onClose: () => void }) {
     </Modal>
   );
 }
+
+const Tile = ({ label, value, red }: { label: string; value: string; red?: boolean }) => (
+  <div className="rounded-md bg-tint px-3.5 py-3"><div className="text-[11px] text-muted">{label}</div><div className={cn("num mt-0.5 text-[16px] font-medium", red && "text-loss")}>{value}</div></div>
+);
 
 /** Circular progress; children sit in the middle. */
 function Ring({ ratio, children }: { ratio: number; children: React.ReactNode }) {
@@ -72,6 +78,7 @@ export function EmiCard({ emi, onEdit }: { emi: EmiView; onEdit: () => void }) {
   const busy = useIsMutating() > 0;
   const [open, setOpen] = useState(false);
   const [extra, setExtra] = useState(false);
+  const [tab, setTab] = useState<"overview" | "breakdown">("overview");
   const Icon = KIND_ICON[emi.kind], isCard = emi.kind === "card", history = emi.payments ?? [];
   const post = (body: unknown) => act(() => api(`/emis/${emi.id}/payments`, { method: "POST", body }), { ok: "Payment recorded" });
   const reconcile = () => {
@@ -85,7 +92,7 @@ export function EmiCard({ emi, onEdit }: { emi: EmiView; onEdit: () => void }) {
 
   return (
     <div className="border border-line bg-white">
-      <div className="flex items-start gap-4 p-5">
+      <div className="flex flex-wrap items-start gap-4 p-4 md:p-5">
         {isCard ? <span className="grid size-12 shrink-0 place-items-center rounded-full bg-tint text-ink"><Icon size={20} weight="duotone" /></span> : (
           <Ring ratio={emi.repaid ?? (emi.total ? emi.paid / emi.total : 0)}>
             <span className="num text-[11px] font-medium">{Math.round((emi.repaid ?? (emi.total ? emi.paid / emi.total : 0)) * 100)}%</span>
@@ -98,7 +105,7 @@ export function EmiCard({ emi, onEdit }: { emi: EmiView; onEdit: () => void }) {
             {rs(emi.amount)} {isCard ? "minimum" : "a month"} · due the {emi.dueDay}th{emi.active && emi.daysToDue <= 7 && <span className={cn("ml-2 px-1.5 py-0.5 font-medium", emi.daysToDue <= 3 ? "bg-loss-bg text-loss" : "bg-warn/10 text-warn")}>due in {emi.daysToDue} day{emi.daysToDue === 1 ? "" : "s"}</span>}
           </div>
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center justify-end gap-2 md:w-auto">
           {emi.kind === "loan" && <Button variant="ghost" size="sm" disabled={!emi.active} onClick={() => setExtra(true)}>Extra payment</Button>}
           <Button size="sm" loading={busy} disabled={!emi.active} onClick={() => post({ kind: "emi" })}>Record payment</Button>
           <details className="relative">
@@ -113,7 +120,7 @@ export function EmiCard({ emi, onEdit }: { emi: EmiView; onEdit: () => void }) {
         </div>
       </div>
 
-      <div className="space-y-3 px-5 pb-5 pl-[84px]">
+      <div className="space-y-3 px-4 pb-4 md:px-5 md:pb-5 md:pl-[84px]">
         {!isCard && <div><div className="mb-1.5 text-[12px] text-muted"><span className="font-medium text-gain">{emi.paid} paid</span> · {emi.instalmentsLeft} to go of {emi.total}</div><Instalments paid={emi.paid} total={emi.total} active={emi.active} /></div>}
         {emi.repaid !== undefined && emi.original !== undefined && <div><div className="mb-1 text-[12px] text-muted">{Math.round(emi.repaid * 100)}% of {rs(emi.original)} repaid</div><Meter ratio={emi.repaid} tone="good" /></div>}
         {emi.paidPrincipal + emi.paidInterest > 0 && (
@@ -129,31 +136,32 @@ export function EmiCard({ emi, onEdit }: { emi: EmiView; onEdit: () => void }) {
 
       {open && (
         <Modal title={emi.name} subtitle={`${KIND_LABEL[emi.kind]}${emi.cardName ? ` · on ${emi.cardName}` : ""}`} icon={Icon} wide onClose={() => setOpen(false)}>
-          <div className="mb-5"><div className="num text-[28px] font-light leading-none">{emi.active ? rs(emi.left) : "Closed"}</div><div className="mt-1 text-[12px] text-muted">{rs(emi.amount)} {isCard ? "minimum" : "a month"} · due the {emi.dueDay}th</div></div>
-        <div className="grid gap-6 text-[13px] md:grid-cols-2">
-          <div>
-            <SectionTitle icon={Info}>Details</SectionTitle>
-            <dl className="space-y-1">
-              {([["Type", KIND_LABEL[emi.kind]], ["Charged to", emi.cardName ?? "–"], ["Interest rate", emi.rate !== undefined ? `${emi.rate}% a year` : "–"], ["Paid as principal", rs(emi.paidPrincipal)], ["Paid as interest and fees", rs(emi.paidInterest)]] as const).map(([k, v]) => (
-                <div key={k} className="flex justify-between"><dt className="text-muted">{k}</dt><dd className="num font-medium">{v}</dd></div>
-              ))}
-            </dl>
-            {emi.balance !== undefined && <p className="mt-3 text-[12px] text-muted">Balance is an estimate from the payments you record. Use Update balance to match your lender statement.</p>}
-          </div>
-          <div>
-            <SectionTitle icon={ListBullets}>Payments</SectionTitle>
-            {history.length === 0 ? <p className="text-muted">None recorded yet.</p> : (
-              <ul className="divide-y divide-line-soft">
-                {history.slice(0, 8).map((p) => (
-                  <li key={p.id} className="flex justify-between py-1.5">
-                    <span>{shortDate(p.date)} · {p.kind === "extra" ? "Extra" : "EMI"}</span>
-                    <span className="num">{rs(p.amount)}{p.interest + p.fees > 0 && <span className="text-muted"> ({rs(p.principal)} principal)</span>}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
+          {emi.kind === "loan" && <div className="mb-5"><Tabs<"overview" | "breakdown"> value={tab} onChange={setTab} items={[{ value: "overview", label: "Overview" }, { value: "breakdown", label: "Breakdown" }]} /></div>}
+          {tab === "breakdown" && emi.kind === "loan" ? <LoanSchedule id={emi.id} /> : (
+            <div className="space-y-7 text-[13px]">
+              <div>
+                <div className="num text-[30px] font-light leading-none">{emi.active ? rs(emi.left) : "Closed"}</div>
+                <div className="mt-1.5 text-[12px] text-muted">{rs(emi.amount)} {isCard ? "minimum" : "a month"} · due the {emi.dueDay}th</div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <Tile label="Principal paid" value={rs(emi.paidPrincipal)} />
+                <Tile label="Interest paid" value={rs(emi.paidInterest)} red />
+                {emi.rate !== undefined && <Tile label="Rate" value={`${emi.rate}%`} />}
+                {!isCard && <Tile label="Payments left" value={String(emi.instalmentsLeft)} />}
+              </div>
+              {emi.kind === "loan" && emi.rate !== undefined && <RateHistory emi={emi} />}
+              {history.length > 0 && (
+                <div>
+                  <h4 className="mb-1 text-[12px] font-medium text-muted">Recent payments</h4>
+                  <ul className="divide-y divide-line-soft">
+                    {history.slice(0, 4).map((p) => (
+                      <li key={p.id} className="flex justify-between py-1.5"><span>{shortDate(p.date)} · {p.kind === "extra" ? "Extra" : "EMI"}</span><span className="num">{rs(p.amount)}</span></li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </Modal>
       )}
       {extra && <ExtraPayment emi={emi} onClose={() => setExtra(false)} />}

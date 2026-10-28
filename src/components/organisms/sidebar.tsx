@@ -30,7 +30,7 @@ export function Sidebar({ groups, onSignOut }: SidebarProps) {
   };
 
   return (
-    <aside className={cn("flex shrink-0 flex-col border-b border-line bg-white md:sticky md:top-0 md:h-dvh md:border-b-0 md:border-r", collapsed ? "md:w-16" : "md:w-[208px]")}>
+    <aside className={cn("hidden shrink-0 flex-col border-line bg-white md:sticky md:top-0 md:flex md:h-dvh md:border-r", collapsed ? "md:w-16" : "md:w-[208px]")}>
       <div className={cn("flex h-14 items-center border-b border-line px-4", collapsed ? "md:justify-center" : "justify-between")}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={collapsed ? "/catalyst-short.svg" : "/catalyst-full.svg"} alt="Catalyst" className="h-7 w-auto" />

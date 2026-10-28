@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { ArrowDownRight, ArrowUpRight, ChartLineUp, ClockCounterClockwise, Plus } from "@phosphor-icons/react";
 import { Button, CompanyLogo } from "@/components/atoms";
-import { Card, Donut, EmptyState, Modal, RowSkeleton, SectionTitle, StatCard, StatSkeleton } from "@/components/molecules";
-import { StockForm } from "@/components/organisms";
+import { Card, Donut, EmptyState, Modal, RowSkeleton, SectionTitle, StatCard, StatSkeleton, Tabs } from "@/components/molecules";
+import { StockChart, StockForm, StockHeatmap, TickerTape, type HeatMetric } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { api, type StockInput, type StockLot, type StockPosition, useAct, useStocks } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -34,6 +34,7 @@ export default function Stocks() {
   const act = useAct();
   const [open, setOpen] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(undefined);
+  const [metric, setMetric] = useState<HeatMetric>("day");
 
   const s = q.data?.summary, positions = q.data?.positions ?? [];
   const sel: StockPosition | undefined = positions.find((p) => p.symbol === open);
@@ -51,6 +52,22 @@ export default function Stocks() {
         <StatCard label="Day Change" value={`${sign(s?.dayChange ?? 0)}${rs(s?.dayChange ?? 0)}`} tone={tone(s?.dayChange ?? 0)} sub={s && s.value > 0 ? pct(s.dayPct) : undefined} />
         </>}
       </div>
+
+      {positions.length > 0 && (
+        <div className="mt-4"><TickerTape symbols={positions.map((p) => p.symbol)} /></div>
+      )}
+
+      {positions.length > 0 && (
+        <div className="mt-4">
+          <Card title="Portfolio heatmap">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-[12px] text-muted">Tile size is current value. Colour is {metric === "day" ? "today's move" : "your total return"}. Click a tile for its chart.</p>
+              <Tabs<HeatMetric> value={metric} onChange={setMetric} items={[{ value: "day", label: "Today" }, { value: "total", label: "Total return" }]} />
+            </div>
+            <StockHeatmap positions={positions} metric={metric} onOpen={setOpen} />
+          </Card>
+        </div>
+      )}
 
       {positions.length > 1 && (
         <div className="mt-4"><Card title="Allocation"><Donut label="Allocation by holding" slices={positions.map((p) => ({ name: p.name ?? p.symbol, value: p.value }))} /></Card></div>
@@ -113,6 +130,7 @@ export default function Stocks() {
             </div>
             <div className={cn("num px-2 py-1 text-[13px] font-medium", chip(sel.pnl))}>{sign(sel.pnl)}{rs(sel.pnl)} ({pct(sel.pnlPct)})</div>
           </div>
+          <div className="mb-5"><StockChart key={sel.symbol} symbol={sel.symbol} /></div>
           <SectionTitle icon={ClockCounterClockwise} action={<Button size="sm" icon={Plus} onClick={() => { setOpen(null); setForm({ symbol: sel.symbol }); }}>Add purchase</Button>}>Purchase history</SectionTitle>
           <div className="overflow-x-auto border border-line">
             <table className="num w-full min-w-160 text-[13px]">

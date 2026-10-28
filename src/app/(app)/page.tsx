@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight, Bank, Calendar, CalendarCheck, ChartLineUp, Gauge, PiggyBank, Sparkle, SquaresFour, Timer, Wallet } from "@phosphor-icons/react";
+import { ArrowDownLeft, ArrowUpRight, Bank, Calendar, CalendarCheck, ChartLineUp, Gauge, HandCoins, PiggyBank, Sparkle, SquaresFour, Timer, TrendUp, Wallet } from "@phosphor-icons/react";
 import { Button } from "@/components/atoms";
 import { Card, Meter, PanelSkeleton, StatCard, StatSkeleton, Tabs } from "@/components/molecules";
-import { AccountBalances, CashflowPanel, RecentActivity } from "@/components/organisms";
+import { AccountBalances, CashflowPanel, NetWorthChart, RecentActivity, SpendingHeatmap } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { type PeriodKey, fetchAdvice, useAccounts, useDashboard } from "@/lib/api";
 import { inr } from "@/lib/money";
@@ -54,8 +54,8 @@ export default function Dashboard() {
         {customIncomplete ? <p className="text-[13px] text-muted">Pick a start and end date.</p> : (
           <>
             <Section n="01" title="Financial position"><div className="grid gap-4 md:grid-cols-3">{[0, 1, 2].map((i) => <StatSkeleton key={i} />)}</div></Section>
-            <Section n="02" title="Cash flow"><div className="grid grid-cols-2 gap-4 xl:grid-cols-4">{[0, 1, 2, 3].map((i) => <StatSkeleton key={i} />)}</div></Section>
-            <Section n="03" title="Where your money goes"><div className="grid gap-4 xl:grid-cols-[2fr_1fr]"><PanelSkeleton /><PanelSkeleton /></div></Section>
+            <Section n="02" title="Net-worth trajectory"><PanelSkeleton /></Section>
+            <Section n="03" title="Cash flow"><div className="grid grid-cols-2 gap-4 xl:grid-cols-4">{[0, 1, 2, 3].map((i) => <StatSkeleton key={i} />)}</div></Section>
           </>
         )}
       </PageLayout>
@@ -76,15 +76,29 @@ export default function Dashboard() {
       )}
 
       <Section n="01" title="Financial position">
-        <div className="grid gap-4 md:grid-cols-3">
-          <StatCard label="Net Worth" icon={Wallet} href="/profile" value={inr(p.netWorthPaise)} sub={`${inr(p.cashPaise)} cash · ${inr(p.currentPaise)} invested`} />
+        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
+          <StatCard label="Net Worth" icon={Wallet} href="/profile" value={inr(p.netWorthPaise)}
+            sub={`${inr(p.cashPaise)} cash · ${inr(p.currentPaise)} invested`} />
           <StatCard label="Cash" icon={Bank} href="/accounts" value={inr(p.cashPaise)} sub={`Across ${p.accounts} account${p.accounts === 1 ? "" : "s"}`} />
           <StatCard label="Investments" icon={ChartLineUp} href={p.usesFunds ? "/funds" : "/profile"} value={inr(p.currentPaise)} tone={pnlTone}
             sub={p.investedPaise > 0 ? `${inr(p.investedPaise)} invested · ${p.pnlPaise >= 0 ? "+" : ""}${inr(p.pnlPaise)} (${pct(p.pnlPaise / p.investedPaise)})` : "Add holdings in About Me"} />
+          <StatCard label="Owed" icon={HandCoins} href="/emis" tone={p.liabilitiesPaise > 0 ? "warn" : "neutral"} value={inr(p.liabilitiesPaise)} sub="Outstanding EMIs and loans. Not deducted from net worth" />
+          <StatCard label="Since Last Month" icon={TrendUp} tone={p.netWorthChangePaise === undefined ? "neutral" : p.netWorthChangePaise >= 0 ? "good" : "bad"}
+            value={p.netWorthChangePaise === undefined ? "–" : `${p.netWorthChangePaise >= 0 ? "+" : ""}${inr(p.netWorthChangePaise)}`}
+            sub={p.netWorthChangeSince ? `Net worth vs ${new Date(`${p.netWorthChangeSince}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" })}` : "No month-end recorded yet"} />
         </div>
       </Section>
 
-      <Section n="02" title="Cash flow">
+      <Section n="02" title="Net-worth trajectory">
+        <NetWorthChart />
+        <Card title="Catalyst AI" icon={Sparkle} className="mt-4" action={<Button size="sm" variant="ghost" loading={advice.busy} onClick={ask}>{advice.text ? "Ask again" : "Get advice"}</Button>}>
+          {advice.text ? <p className="whitespace-pre-line text-[13px] text-sub">{advice.text}</p>
+            : advice.error ? <p className="text-[13px] text-loss">{advice.error}</p>
+            : <p className="text-[13px] text-muted">A short read of this period&apos;s numbers and what you told Catalyst about yourself.</p>}
+        </Card>
+      </Section>
+
+      <Section n="03" title="Cash flow">
         <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
           <StatCard label="Income" icon={ArrowDownLeft} tone={c.incomePaise > 0 ? "good" : "neutral"} value={inr(c.incomePaise)} sub="Credits typed as income. Transfers and refunds excluded" />
           <StatCard label="Expenses" icon={ArrowUpRight} value={inr(c.spentPaise)} sub={c.earlierSpentPaise > 0 ? `Incl. ${inr(c.earlierSpentPaise)} before Catalyst` : "Excludes transfers and investments"} />
@@ -92,13 +106,10 @@ export default function Dashboard() {
           <StatCard label="Net Cash" icon={Wallet} tone={netTone} value={`${c.netPaise > 0 ? "+" : ""}${inr(c.netPaise)}`}
             sub={c.savingsRate === undefined ? "No income in this period" : `Savings rate ${Math.round(c.savingsRate * 100)}% = (income − expenses) ÷ income`} />
         </div>
+        <div className="mt-4"><CashflowPanel cashflow={c} loading={false} /></div>
       </Section>
 
-      <Section n="03" title="Where your money goes">
-        <CashflowPanel cashflow={c} loading={false} />
-      </Section>
-
-      <Section n="04" title="Upcoming">
+      <Section n="04" title="Upcoming commitments">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <StatCard label="Next Salary" icon={CalendarCheck} href="/profile" tone={u.salaryPaise > 0 ? "good" : "neutral"} value={u.salaryPaise > 0 ? `${u.daysToSalary} days` : "–"}
             sub={u.salaryPaise > 0 ? `${inr(u.salaryPaise)} expected on the ${u.salaryDay}th. Change in About Me` : "Set salary in About Me"} />
@@ -115,11 +126,6 @@ export default function Dashboard() {
             {u.dailyTargetPaise > 0 && <Meter ratio={u.todaySpentPaise / u.dailyTargetPaise} tone={u.dailyTone} />}
           </StatCard>
         </div>
-        <Card title="Catalyst AI" icon={Sparkle} className="mt-4" action={<Button size="sm" variant="ghost" loading={advice.busy} onClick={ask}>{advice.text ? "Ask again" : "Get advice"}</Button>}>
-          {advice.text ? <p className="whitespace-pre-line text-[13px] text-sub">{advice.text}</p>
-            : advice.error ? <p className="text-[13px] text-loss">{advice.error}</p>
-            : <p className="text-[13px] text-muted">A short read of this period&apos;s numbers and what you told Catalyst about yourself.</p>}
-        </Card>
       </Section>
 
       <Section n="05" title="Activity">
@@ -127,6 +133,10 @@ export default function Dashboard() {
           <RecentActivity txns={d.recent} className="xl:col-span-2" />
           <AccountBalances accounts={A} />
         </div>
+      </Section>
+
+      <Section n="06" title="Daily spending">
+        <SpendingHeatmap />
       </Section>
     </PageLayout>
   );
