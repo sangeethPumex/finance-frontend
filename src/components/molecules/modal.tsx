@@ -23,7 +23,7 @@ export function Modal({ title, subtitle, icon, onClose, children, wide }: { titl
             <h2 className="truncate text-[17px] font-semibold leading-tight tracking-tight">{title}</h2>
             {subtitle && <p className="mt-0.5 truncate text-[12px] text-muted">{subtitle}</p>}
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="grid size-8 shrink-0 place-items-center rounded-md bg-loss/10 text-loss transition-colors hover:bg-loss hover:text-white"><X size={16} weight="bold" /></button>
+          <button type="button" onClick={onClose} aria-label="Close" className="grid size-10 shrink-0 place-items-center rounded-md bg-loss/10 md:size-8 text-loss transition-colors hover:bg-loss hover:text-white"><X size={16} weight="bold" /></button>
         </div>
         <div className="p-4 sm:p-6">{children}</div>
       </div>

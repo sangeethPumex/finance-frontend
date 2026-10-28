@@ -11,10 +11,10 @@ const variants: Record<ButtonVariant, string> = {
 };
 
 const sizes: Record<ButtonSize, string> = {
-  sm: "h-8 gap-1.5 px-3 text-xs",
-  md: "h-9 gap-2 px-4 text-[13px]",
+  sm: "h-10 md:h-8 gap-1.5 px-3 text-xs",
+  md: "h-11 md:h-9 gap-2 px-4 text-[13px]",
   lg: "h-11 gap-2 px-6 text-sm",
-  icon: "size-8 p-0",
+  icon: "size-10 p-0 md:size-8",
 };
 
 const iconPx: Record<ButtonSize, number> = { sm: 13, md: 14, lg: 16, icon: 15 };

@@ -22,8 +22,31 @@ export type DataTableProps<T> = {
 /** Bordered table with a tinted header row and soft dividers. Shows an empty state when there are no rows. */
 export function DataTable<T>({ columns, rows, rowKey, loading, emptyText = "Nothing here yet", emptyIcon }: DataTableProps<T>) {
   if (rows.length === 0) return loading ? null : <EmptyState icon={emptyIcon}>{emptyText}</EmptyState>;
+  const [title, ...rest] = columns;
+  const actions = rest.filter((c) => !c.header);
+  const fields = rest.filter((c) => c.header);
   return (
-    <div className="overflow-hidden rounded-lg border border-line">
+    <>
+      {/* Phone: one card per row; the first column is the title, header-less columns are actions. */}
+      <ul className="divide-y divide-line-soft overflow-hidden rounded-lg border border-line md:hidden">
+        {rows.map((r) => (
+          <li key={rowKey(r)} className="px-4 py-3 text-[13px] text-sub">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 font-medium text-ink">{title.cell(r)}</div>
+              {actions.length > 0 && <div className="flex shrink-0 items-center gap-1">{actions.map((c) => <span key={c.key}>{c.cell(r)}</span>)}</div>}
+            </div>
+            <dl className="mt-1.5 space-y-1">
+              {fields.map((c) => (
+                <div key={c.key} className="flex items-baseline justify-between gap-3">
+                  <dt className="text-[11px] uppercase tracking-wide text-faint">{c.header}</dt>
+                  <dd className="min-w-0 text-right">{c.cell(r)}</dd>
+                </div>
+              ))}
+            </dl>
+          </li>
+        ))}
+      </ul>
+    <div className="hidden overflow-hidden rounded-lg border border-line md:block">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-[13px] text-sub">
           <thead>
@@ -45,5 +68,6 @@ export function DataTable<T>({ columns, rows, rowKey, loading, emptyText = "Noth
         </table>
       </div>
     </div>
+    </>
   );
 }
