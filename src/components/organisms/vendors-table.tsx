@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { GitMerge, Storefront, Trash } from "@phosphor-icons/react";
-import { api, useWrite, type Category, type Vendor } from "@/lib/api";
+import { api, useListCache, useWrite, type Category, type Vendor } from "@/lib/api";
 import { Button } from "../atoms";
 import { InlineError, Tag } from "../molecules";
 import { DataTable, type Column } from "./data-table";
@@ -13,6 +13,7 @@ const patch = (v: Vendor, body: object) => api(`/vendors/${v.id}`, { method: "PA
 
 function EditVendor({ v, categories }: { v: Vendor; categories: Category[] }) {
   const save = useWrite((body: object) => patch(v, body));
+  const setVendors = useListCache<Vendor>("vendors");
   return (
     <EditDialog
       title={`Edit ${v.name}`}
@@ -25,7 +26,9 @@ function EditVendor({ v, categories }: { v: Vendor; categories: Category[] }) {
       ]}
       onSave={(f, done) => {
         const aliases = f.aliases.split(",").map((a) => a.trim()).filter(Boolean);
-        save.mutate({ name: f.name, aliases, ...(f.category_id ? { category_id: f.category_id } : {}) }, { onSuccess: done });
+        const body = { name: f.name, aliases, ...(f.category_id ? { category_id: f.category_id } : {}) };
+        setVendors((rows) => rows.map((r) => (r.id === v.id ? { ...r, ...body } : r)));
+        save.mutate(body, { onSuccess: done });
       }}
     />
   );
@@ -39,6 +42,7 @@ function AliasList({ v }: { v: Vendor }) {
 
 function DeleteCell({ v }: { v: Vendor }) {
   const del = useWrite(() => api(`/vendors/${v.id}`, { method: "DELETE" }));
+  const setVendors = useListCache<Vendor>("vendors");
   return (
     <span className="flex items-center justify-end">
       <Button
@@ -47,7 +51,7 @@ function DeleteCell({ v }: { v: Vendor }) {
         icon={Trash}
         aria-label={`Delete ${v.name}`}
         loading={del.isPending}
-        onClick={() => confirm(`Delete ${v.name}? Its transactions go back to review.`) && del.mutate(undefined)}
+        onClick={() => { if (!confirm(`Delete ${v.name}? Its transactions go back to review.`)) return; setVendors((rows) => rows.filter((r) => r.id !== v.id)); del.mutate(undefined); }}
       />
       <InlineError error={del.error} />
     </span>

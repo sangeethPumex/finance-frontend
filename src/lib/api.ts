@@ -102,7 +102,7 @@ export const usePatterns = () => useQuery({ queryKey: ["patterns"], queryFn: () 
 
 export const useSummary = () => useQuery({ queryKey: ["summary"], queryFn: () => api<Summary>("/summary") });
 /** Narrows the transaction list; blanks are ignored. Dates are YYYY-MM-DD, min and max are rupees. */
-export type TxnFilter = Partial<Record<"q" | "category_id" | "account_id" | "direction" | "from" | "to" | "min" | "max", string> & { needs_review: boolean; owed: boolean }>;
+export type TxnFilter = Partial<Record<"q" | "category_id" | "account_id" | "direction" | "from" | "to" | "min" | "max" | "status", string> & { needs_review: boolean; owed: boolean }>;
 export const useTransactions = (f: TxnFilter = {}, limit = 100) =>
   useQuery({
     queryKey: ["transactions", f, limit],
@@ -110,10 +110,35 @@ export const useTransactions = (f: TxnFilter = {}, limit = 100) =>
     placeholderData: (prev) => prev, // keep the old rows while a typed search loads
   });
 
+export type TxnPage = { items: Txn[]; page: number; limit: number; total: number; pages: number };
+/** One page of the filtered list (POST /transactions/search). status: review | uncategorised | attention. min and max are rupees. */
+export const useTransactionsPage = (f: TxnFilter, page: number, limit = 50) =>
+  useQuery({
+    queryKey: ["transactions", "page", f, page, limit],
+    queryFn: () => api<TxnPage>("/transactions/search", { method: "POST", body: { page, limit, filter: Object.fromEntries(Object.entries(f).filter(([, v]) => v)) } }),
+    placeholderData: (prev) => prev, // keep the old rows while the next page or a typed search loads
+  });
+
 /** Runs a write, then refetches everything (accounts balances, transactions and vendors all depend on each other). */
 export function useWrite<V>(fn: (v: V) => Promise<unknown>) {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries() });
+  // The refetch runs in the background (not returned), so the caller sees "done" as soon as the server has answered; a failure refetches to undo any optimistic edit.
+  return useMutation({ mutationFn: fn, onSuccess: () => { void qc.invalidateQueries(); }, onError: () => { void qc.invalidateQueries(); } });
+}
+
+/** Edits a cached list (key "vendors", "categories", ...) at once, before the server has answered; a failed write refetches and undoes it. */
+export function useListCache<T>(key: string) {
+  const qc = useQueryClient();
+  return (fn: (rows: T[]) => T[]) => qc.setQueryData<T[]>([key], (d) => (d ? fn(d) : d));
+}
+
+/** Shows an edit to one transaction at once, in every cached list (paged or plain), before the server has answered. */
+export function useTxnCache() {
+  const qc = useQueryClient();
+  return (id: string, changes: Partial<Txn>) => {
+    const apply = (t: Txn) => (t.id === id ? { ...t, ...changes } : t);
+    qc.setQueriesData<Txn[] | TxnPage>({ queryKey: ["transactions"] }, (d) => (Array.isArray(d) ? d.map(apply) : d && "items" in d ? { ...d, items: d.items.map(apply) } : d));
+  };
 }
 
 // ---- Dashboard: computed by the backend; money here is paise ----

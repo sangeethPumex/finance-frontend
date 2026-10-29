@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { UserCircle } from "@phosphor-icons/react";
+import { UserCircle, X } from "@phosphor-icons/react";
 import { Button, Input } from "@/components/atoms";
 import { Card, FormField } from "@/components/molecules";
 import { PageLayout } from "@/components/templates";
 import { useFunds } from "@/lib/api";
-import { type Holding, type Profile, useProfile } from "@/lib/profile";
+import { type Holding, type Profile, useForget, useProfile } from "@/lib/profile";
 
 type Num = "salary" | "salaryDay" | "sip" | "fixedMonthly" | "bufferTarget";
 const NUMS: { key: Num; label: string; hint: string }[] = [
@@ -26,6 +26,7 @@ const n = (v: string) => Math.max(Number(v) || 0, 0);
 export default function AboutMe() {
   const { profile, save, saving, ready, error } = useProfile();
   const [draft, setDraft] = useState<Profile>(profile);
+  const forget = useForget();
   const funds = useFunds().data?.summary, hasFunds = (funds?.count ?? 0) > 0;
   useEffect(() => setDraft(profile), [profile]);
 
@@ -79,6 +80,20 @@ export default function AboutMe() {
           <FormField hint="Anything the AI should know: goals, dependants, upcoming big expenses.">
             <textarea rows={4} value={draft.goals} onChange={(e) => edit({ ...draft, goals: e.target.value })} className="w-full border border-line p-3 text-[13px]" />
           </FormField>
+        </Card>
+        <Card title="What the AI remembers" className="xl:col-span-2">
+          {profile.memory.length === 0 ? (
+            <p className="text-[13px] text-muted">Nothing yet. When you tell the AI Expert a lasting goal or preference, it is kept here and used in later answers.</p>
+          ) : (
+            <ul className="flex flex-wrap gap-2">
+              {profile.memory.map((f) => (
+                <li key={f} className="flex items-center gap-1.5 rounded-full border border-line py-1 pl-3 pr-1.5 text-[13px] text-sub">
+                  {f}
+                  <button type="button" aria-label={`Forget: ${f}`} className="grid size-5 place-content-center rounded-full text-muted hover:bg-tint hover:text-loss" onClick={() => forget(f)}><X size={12} /></button>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
         <div className="flex items-center gap-3 xl:col-span-2">
           <Button type="submit" loading={saving} disabled={!ready}>Save</Button>

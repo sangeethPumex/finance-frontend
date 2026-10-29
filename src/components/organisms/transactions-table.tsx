@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowDownLeft, ArrowsLeftRight, ArrowUpRight, ArrowUUpLeft, CalendarCheck, CreditCard, HandCoins, Money, PencilSimple, SplitHorizontal, type Icon } from "@phosphor-icons/react";
-import { api, useVendors, useWrite, type Account, type Card, type Category, type Txn } from "@/lib/api";
+import { api, useTxnCache, useVendors, useWrite, type Account, type Card, type Category, type Txn } from "@/lib/api";
 import { shortDateTime } from "@/lib/dates";
 import { inr } from "@/lib/money";
 import { cn } from "@/lib/cn";
@@ -26,6 +26,7 @@ function DirectionBadge({ t }: { t: Txn }) {
 /** Files an unknown-vendor transaction: creates a vendor with this payee as its alias. */
 function ReviewCell({ t, categories }: { t: Txn; categories: Category[] }) {
   const [cat, setCat] = useState(t.suggested_category_id ?? "");
+  const setTxn = useTxnCache();
   const save = useWrite(() =>
     api("/vendors", { method: "POST", body: { name: vendorLabel(t), category_id: cat, aliases: [(t.upi_id || t.raw_vendor || "").toLowerCase()] } }));
   return (
@@ -34,7 +35,7 @@ function ReviewCell({ t, categories }: { t: Txn; categories: Category[] }) {
         <option value="">Category…</option>
         {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
       </Select>
-      <Button size="sm" disabled={!cat} loading={save.isPending} onClick={() => save.mutate(undefined)}>Save</Button>
+      <Button size="sm" disabled={!cat} loading={save.isPending} onClick={() => { setTxn(t.id, { category_id: cat, needs_review: false }); save.mutate(undefined); }}>Save</Button>
       <InlineError error={save.error} />
     </span>
   );
@@ -48,6 +49,7 @@ const CARD_PAYMENTS = "Credit card payments";
  */
 function CategoryCell({ t, categories, cards, onSplit }: { t: Txn; categories: Category[]; cards: Card[]; onSplit: () => void }) {
   const [editing, setEditing] = useState(false);
+  const setTxn = useTxnCache();
   const patch = useWrite((body: { category_id?: string; paid_card_id?: string }) => api(`/transactions/${t.id}`, { method: "PATCH", body }));
   const cat = categories.find((c) => c.id === t.category_id);
   const needsCard = cat?.name === CARD_PAYMENTS && isDebit(t) !== false;
@@ -71,13 +73,13 @@ function CategoryCell({ t, categories, cards, onSplit }: { t: Txn; categories: C
     <span className="flex flex-wrap items-center gap-1.5">
       {pickCategory && (
         <Select size="sm" value={t.category_id ?? ""} disabled={patch.isPending} aria-label="Category"
-          onChange={(e) => e.target.value && patch.mutate({ category_id: e.target.value }, { onSuccess: () => categories.find((c) => c.id === e.target.value)?.name !== CARD_PAYMENTS && done() })}>
+          onChange={(e) => { if (!e.target.value) return; setTxn(t.id, { category_id: e.target.value }); patch.mutate({ category_id: e.target.value }, { onSuccess: () => categories.find((c) => c.id === e.target.value)?.name !== CARD_PAYMENTS && done() }); }}>
           {!t.category_id && <option value="">Category…</option>}
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </Select>
       )}
       {pickCard && (
-        <Select size="sm" value={t.paid_card_id ?? ""} disabled={patch.isPending} aria-label="Card paid" onChange={(e) => e.target.value && patch.mutate({ paid_card_id: e.target.value }, { onSuccess: done })}>
+        <Select size="sm" value={t.paid_card_id ?? ""} disabled={patch.isPending} aria-label="Card paid" onChange={(e) => { if (!e.target.value) return; setTxn(t.id, { paid_card_id: e.target.value }); patch.mutate({ paid_card_id: e.target.value }, { onSuccess: done }); }}>
           <option value="">Which card?</option>
           {cards.map((c) => <option key={c.id} value={c.id}>{c.name}{c.last4 && ` ••${c.last4}`}</option>)}
         </Select>
