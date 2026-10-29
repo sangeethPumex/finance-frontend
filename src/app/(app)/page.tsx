@@ -7,7 +7,7 @@ import { Button } from "@/components/atoms";
 import { Card, Meter, PanelSkeleton, StatCard, StatSkeleton, Tabs } from "@/components/molecules";
 import { AccountBalances, CashflowPanel, NetWorthChart, PositionPanel, RecentActivity, SpendingHeatmap } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
-import { type PeriodKey, fetchAdvice, useAccounts, useDashboard } from "@/lib/api";
+import { type PeriodKey, fetchAdvice, useAccounts, useBudgets, useDashboard } from "@/lib/api";
 import { inr } from "@/lib/money";
 
 const PERIODS: { value: PeriodKey; label: string }[] = [
@@ -24,7 +24,7 @@ const Section = ({ n, title, children }: { n: string; title: string; children: R
 export default function Dashboard() {
   const [period, setPeriod] = useState<PeriodKey>("month");
   const [custom, setCustom] = useState({ from: "", to: "" });
-  const dash = useDashboard(period, custom.from, custom.to), accounts = useAccounts();
+  const dash = useDashboard(period, custom.from, custom.to), accounts = useAccounts(), budgets = useBudgets();
   const [advice, setAdvice] = useState<{ text?: string; busy?: boolean; error?: string }>({});
 
   const d = dash.data;
@@ -64,9 +64,15 @@ export default function Dashboard() {
   const { position: p, cashflow: c, upcoming: u } = d;
   const netTone = c.netPaise > 0 ? "good" : c.netPaise < 0 ? "bad" : "neutral";
   const A = accounts.data ?? [];
+  const overBudget = (budgets.data ?? []).filter((b) => b.level !== "ok").length;
 
   return (
     <PageLayout title="Dashboard" icon={SquaresFour} action={action} error={dash.error || accounts.error}>
+      {overBudget > 0 && (
+        <Link href="/budgets" className="mb-2 block border border-warn bg-warn-bg px-5 py-3 text-[13px] text-warn">
+          {overBudget} budget{overBudget === 1 ? " is" : "s are"} at 80% or more this month. See Budgets →
+        </Link>
+      )}
       {d.needsProfile && (
         <Link href="/profile" className="mb-2 block border border-warn bg-warn-bg px-5 py-3 text-[13px] text-warn">
           Tell Catalyst about your salary, SIPs and investments to unlock runway, daily target and portfolio. Set up About Me →

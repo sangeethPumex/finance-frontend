@@ -36,7 +36,8 @@ export function Sankey({ sources, dests, income, selected, onSelect }: { sources
   });
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Money flow from income sources to spending categories" className="h-auto w-full">
+    // The labels are unreadable squeezed into a phone width, so below 640px the chart scrolls sideways inside its card.
+    <div className="overflow-x-auto"><svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Money flow from income sources to spending categories" className="h-auto w-full min-w-160">
       {links.map(({ n, h, x0, y0, x1, y1, a, b }, i) => {
         const mid = (x0 + x1) / 2;
         return (
@@ -64,6 +65,6 @@ export function Sankey({ sources, dests, income, selected, onSelect }: { sources
           <title>{`${flow.name}: ${inr(flow.paise)}`}</title>
         </g>
       ))}
-    </svg>
+    </svg></div>
   );
 }

@@ -2,22 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { BookmarkSimple, MagnifyingGlass, X } from "@phosphor-icons/react";
-import type { Account, Category, TxnFilter } from "@/lib/api";
+import { api, useAct, useViews, type Account, type Category, type TxnFilter } from "@/lib/api";
 import { Button, Input, Select } from "../atoms";
 import { Tag } from "../molecules";
 
-const KEY = "catalyst.txn-views";
-type SavedView = { name: string; filter: TxnFilter };
-
-// ponytail: saved views live in this browser only; move them to the backend if they need to follow the user across devices.
-const load = (): SavedView[] => { try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; } };
-const store = (v: SavedView[]) => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* storage blocked */ } };
+/** A view is stored as strings (the list's query parameters), so the owed flag round-trips as "true". */
+const toFilter = (f: Record<string, string>) => ({ ...f, owed: f.owed === "true" || undefined }) as TxnFilter;
+const toStored = (f: TxnFilter) => Object.fromEntries(Object.entries(f).filter(([, v]) => v).map(([k, v]) => [k, String(v)]));
 
 /** Search box, filters and saved views. The parent owns the filter and fetches; this only edits it. */
 export function TransactionsFilters({ value, onChange, accounts, categories }: { value: TxnFilter; onChange: (f: TxnFilter) => void; accounts: Account[]; categories: Category[] }) {
-  const [views, setViews] = useState<SavedView[]>([]);
+  const act = useAct();
+  const views = useViews().data ?? [];
   const [text, setText] = useState(value.q ?? "");
-  useEffect(() => setViews(load()), []); // after mount so server and client render the same first frame
   useEffect(() => setText(value.q ?? ""), [value.q]); // a saved view replaces the typed text
   useEffect(() => { // search as you type, after a short pause
     if (text === (value.q ?? "")) return;
@@ -30,10 +27,9 @@ export function TransactionsFilters({ value, onChange, accounts, categories }: {
   const save = () => {
     const name = window.prompt("Name this view")?.trim();
     if (!name) return;
-    const next = [...views.filter((v) => v.name !== name), { name, filter: value }];
-    setViews(next); store(next);
+    act(() => api("/views", { method: "PUT", body: { name, filter: toStored(value) } }), { ok: "View saved" });
   };
-  const remove = (name: string) => { const next = views.filter((v) => v.name !== name); setViews(next); store(next); };
+  const remove = (id: string) => act(() => api(`/views/${id}`, { method: "DELETE" }), { ok: "View deleted" });
 
   return (
     <div className="mb-4 space-y-2">
@@ -58,8 +54,8 @@ export function TransactionsFilters({ value, onChange, accounts, categories }: {
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] uppercase tracking-wide text-faint">Saved</span>
           {views.map((v) => (
-            <Tag key={v.name} variant="outline" onRemove={() => remove(v.name)} removeLabel={`Delete view ${v.name}`}>
-              <button type="button" onClick={() => onChange(v.filter)}>{v.name}</button>
+            <Tag key={v.id} variant="outline" onRemove={() => remove(v.id)} removeLabel={`Delete view ${v.name}`}>
+              <button type="button" onClick={() => onChange(toFilter(v.filter))}>{v.name}</button>
             </Tag>
           ))}
         </div>

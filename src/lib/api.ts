@@ -44,6 +44,8 @@ export type Txn = {
   raw_vendor?: string; upi_id?: string; vendor_id?: string; category_id?: string;
   /** Paid for someone else: how much of this payment they owe back, and how much has come back. Not counted as the user's spend. */
   owed_from?: string; owed_paise?: number; repaid_paise?: number;
+  /** One payment spread over several categories; the parts add up to amount_paise. */
+  splits?: { category_id: string; paise: number }[];
   needs_review: boolean; review_reason?: string; suggested_category_id?: string;
 };
 
@@ -80,6 +82,24 @@ export const useAccount = (id: string) => useQuery({ queryKey: ["account", id], 
 export const useAccountTxns = (id: string) => useQuery({ queryKey: ["transactions", "account", id], queryFn: () => api<Txn[]>(`/transactions?limit=200&account_id=${id}`) });
 export const useCategories = list<Category>("categories");
 export const useVendors = list<Vendor>("vendors");
+export type BudgetStatus = { id: string; category_id: string; limit_paise: number; spent_paise: number; ratio: number; level: "ok" | "warn" | "over" };
+export const useBudgets = () => useQuery({ queryKey: ["budgets"], queryFn: () => api<BudgetStatus[]>("/budgets") });
+
+export type SavedView = { id: string; name: string; filter: Record<string, string> };
+export const useViews = list<SavedView>("views");
+
+export type Recurring = {
+  name: string; vendor_id?: string; category_id?: string; cadence: "weekly" | "monthly" | "quarterly" | "yearly";
+  amount_paise: number; monthly_paise: number; count: number; last_at: string; next_at: string; days_until: number; status: "active" | "lapsed";
+};
+export type Anomaly = { txn_id: string; vendor: string; at: string; paise: number; usual_paise: number; ratio: number; kind: "spike" | "new_vendor" };
+export type Bucket = { paise: number; count: number };
+/** Weekdays run Sunday first; hours are 0-23 in IST. Notes are plain-language observations from the backend. */
+export type Patterns = { weekdays: Bucket[]; hours: Bucket[]; notes: string[] };
+export type Insights = { recurring: Recurring[]; monthly_paise: number; anomalies: Anomaly[]; patterns: Patterns };
+export const useInsights = () => useQuery({ queryKey: ["insights"], queryFn: () => api<Insights>("/insights") });
+export const usePatterns = () => useQuery({ queryKey: ["patterns"], queryFn: () => api<Patterns>("/insights/patterns") });
+
 export const useSummary = () => useQuery({ queryKey: ["summary"], queryFn: () => api<Summary>("/summary") });
 /** Narrows the transaction list; blanks are ignored. Dates are YYYY-MM-DD, min and max are rupees. */
 export type TxnFilter = Partial<Record<"q" | "category_id" | "account_id" | "direction" | "from" | "to" | "min" | "max", string> & { needs_review: boolean; owed: boolean }>;

@@ -21,11 +21,11 @@ export function PositionPanel({ p }: { p: Dashboard["position"] }) {
   ];
 
   return (
-    <div className="grid gap-8 rounded-lg bg-ink p-6 text-white md:p-8 lg:grid-cols-[1.3fr_1fr] lg:gap-12">
-      <div className="flex flex-col justify-between gap-6">
+    <div className="grid gap-10 rounded-lg bg-ink p-5 text-white md:p-8 lg:grid-cols-[1.3fr_1fr] lg:gap-12">
+      <div className="flex min-w-0 flex-col justify-between gap-6">
         <div>
           <Link href="/profile" className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/60 hover:text-white">Net worth</Link>
-          <div className="num mt-3 text-[44px] font-semibold leading-none tracking-tight md:text-[60px]">{inr(p.netWorthPaise)}</div>
+          <div className="num mt-3 text-[36px] font-semibold leading-none tracking-tight sm:text-[44px] md:text-[60px]">{inr(p.netWorthPaise)}</div>
           <div className={cn("mt-3 text-[13px]", change === undefined ? "text-white/50" : change >= 0 ? "text-green-400" : "text-red-400")}>
             {change === undefined ? "No month-end recorded yet" : <>{change >= 0 ? "+" : ""}{inr(change)} <span className="text-white/50">since {p.netWorthChangeSince ? new Date(`${p.netWorthChangeSince}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" }) : "last month"}</span></>}
           </div>
@@ -41,13 +41,16 @@ export function PositionPanel({ p }: { p: Dashboard["position"] }) {
           </div>
         )}
       </div>
-      <ul className="divide-y divide-white/15 self-center">
+      <ul className="grid min-w-0 gap-3 self-stretch">
         {rows.map((r) => (
-          <li key={r.label}>
-            <Link href={r.href} className="flex items-center justify-between gap-3 py-4 first:pt-0 last:pb-0 hover:opacity-80">
-              <span className="grid size-9 shrink-0 place-items-center self-center rounded-md bg-white/10"><r.icon size={18} weight="duotone" /></span>
-              <span className="min-w-0 flex-1"><span className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-white/60">{r.label}</span><span className="mt-1 block truncate text-[12px] text-white/50">{r.sub}</span></span>
-              <span className={cn("num shrink-0 text-[22px] font-semibold tracking-tight", r.tone)}>{r.value}</span>
+          <li key={r.label} className="flex">
+            <Link href={r.href} className="flex min-h-[88px] flex-1 items-center gap-4 rounded-md bg-white/[0.06] px-5 py-5 transition-colors hover:bg-white/10">
+              <span className="grid size-10 shrink-0 place-items-center rounded-md bg-white/10"><r.icon size={20} weight="duotone" /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-white/60">{r.label}</span>
+                <span className={cn("num mt-1 block text-[22px] font-semibold leading-tight tracking-tight", r.tone)}>{r.value}</span>
+                <span className="mt-1 block text-[12px] leading-snug text-white/50">{r.sub}</span>
+              </span>
             </Link>
           </li>
         ))}

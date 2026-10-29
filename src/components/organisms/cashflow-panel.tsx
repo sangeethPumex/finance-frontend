@@ -26,7 +26,7 @@ export function CashflowPanel({ cashflow: data, loading }: Props) {
   const spendFlows = data.dests.filter((f) => f.tone !== "net");
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[2fr_1fr]">
       <Card title="Where your money goes" icon={ChartBar} action={<Tabs<View> value={view} items={VIEWS} onChange={setView} />}>
         {loading ? (
           <div className="h-72 animate-pulse bg-tint" />

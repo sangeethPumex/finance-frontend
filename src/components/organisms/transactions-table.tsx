@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowDownLeft, ArrowsLeftRight, ArrowUpRight, ArrowUUpLeft, CalendarCheck, CreditCard, HandCoins, Money, PencilSimple, type Icon } from "@phosphor-icons/react";
-import { api, useWrite, type Account, type Card, type Category, type Txn } from "@/lib/api";
+import { ArrowDownLeft, ArrowsLeftRight, ArrowUpRight, ArrowUUpLeft, CalendarCheck, CreditCard, HandCoins, Money, PencilSimple, SplitHorizontal, type Icon } from "@phosphor-icons/react";
+import { api, useVendors, useWrite, type Account, type Card, type Category, type Txn } from "@/lib/api";
 import { shortDateTime } from "@/lib/dates";
 import { inr } from "@/lib/money";
 import { cn } from "@/lib/cn";
 import { isDebit, signed, sourceLabel, vendorLabel } from "@/lib/txn";
 import { Button, Select } from "../atoms";
 import { OwedDialog } from "./owed-dialog";
+import { SplitDialog } from "./split-dialog";
 import { InlineError } from "../molecules";
 import { DataTable, type Column } from "./data-table";
 
@@ -45,12 +46,16 @@ const CARD_PAYMENTS = "Credit card payments";
  * Category of one transaction. Dropdowns show only while a choice is missing (no category, or a card payment without its card) or while
  * editing; once settled it reads as text with a pencil. Under "Credit card payments" money going out also names the card it paid.
  */
-function CategoryCell({ t, categories, cards }: { t: Txn; categories: Category[]; cards: Card[] }) {
+function CategoryCell({ t, categories, cards, onSplit }: { t: Txn; categories: Category[]; cards: Card[]; onSplit: () => void }) {
   const [editing, setEditing] = useState(false);
   const patch = useWrite((body: { category_id?: string; paid_card_id?: string }) => api(`/transactions/${t.id}`, { method: "PATCH", body }));
   const cat = categories.find((c) => c.id === t.category_id);
   const needsCard = cat?.name === CARD_PAYMENTS && isDebit(t) !== false;
   const card = cards.find((c) => c.id === t.paid_card_id);
+  if (t.splits?.length) {
+    const names = t.splits.map((s) => categories.find((c) => c.id === s.category_id)?.name ?? "?").join(" + ");
+    return <button type="button" title="Edit split" onClick={onSplit} className="text-left text-muted hover:text-ink">Split: {names}</button>;
+  }
   const pickCategory = !cat || editing, pickCard = needsCard && (!card || editing);
   const done = () => setEditing(false);
 
@@ -94,19 +99,23 @@ export type TransactionsTableProps = {
 
 export function TransactionsTable({ txns, accounts, cards, categories, loading, emptyText = "No transactions yet" }: TransactionsTableProps) {
   const [owing, setOwing] = useState<Txn | null>(null);
+  const [splitting, setSplitting] = useState<Txn | null>(null);
+  const vendors = useVendors().data ?? [];
+  // A saved vendor's name beats the raw UPI id / SMS text.
+  const nameOf = (t: Txn) => vendors.find((v) => v.id === t.vendor_id)?.name ?? vendorLabel(t);
   const columns: Column<Txn>[] = [
     { key: "date", header: "Date", cell: (t) => <span className="whitespace-nowrap text-muted">{shortDateTime(t.received_at ?? t.occurred_at)}</span> },
     {
       key: "vendor",
       header: "Vendor",
-      cell: (t) => <span className="flex items-center gap-3"><DirectionBadge t={t} /><span className="font-medium text-ink">{vendorLabel(t)}</span></span>,
+      cell: (t) => <span className="flex items-center gap-3"><DirectionBadge t={t} /><span className="font-medium text-ink">{nameOf(t)}</span></span>,
     },
     {
       key: "category",
       header: "Category",
       cell: (t) => t.needs_review
         ? <ReviewCell t={t} categories={categories} />
-        : <CategoryCell t={t} categories={categories} cards={cards} />,
+        : <CategoryCell t={t} categories={categories} cards={cards} onSplit={() => setSplitting(t)} />,
     },
     { key: "account", header: "Account", cell: (t) => <span className="text-muted">{sourceLabel(t, accounts, cards)}</span> },
     { key: "amount", header: "Amount", align: "right", cell: (t) => <span className={cn("num font-medium", isDebit(t) === false ? "text-gain" : isDebit(t) ? "text-loss" : "text-sub")}>{signed(t) > 0 ? "+" : ""}{inr(signed(t))}</span> },
@@ -115,13 +124,19 @@ export function TransactionsTable({ txns, accounts, cards, categories, loading, 
       header: "",
       cell: (t) => t.owed_paise
         ? <button type="button" onClick={() => setOwing(t)} className="whitespace-nowrap text-[12px] font-medium text-warn hover:underline">{t.owed_from} owes {inr(t.owed_paise - (t.repaid_paise ?? 0))}</button>
-        : isDebit(t) ? <button type="button" aria-label="Mark as paid for someone" title="Paid for someone? Track what they owe you" onClick={() => setOwing(t)} className="text-muted hover:text-ink"><HandCoins size={16} /></button> : null,
+        : isDebit(t) ? (
+          <span className="flex items-center gap-2.5">
+            <button type="button" aria-label="Split across categories" title="Split across categories" onClick={() => setSplitting(t)} className={cn("hover:text-ink", t.splits?.length ? "text-ink" : "text-muted")}><SplitHorizontal size={16} /></button>
+            {!t.splits?.length && <button type="button" aria-label="Mark as paid for someone" title="Paid for someone? Track what they owe you" onClick={() => setOwing(t)} className="text-muted hover:text-ink"><HandCoins size={16} /></button>}
+          </span>
+        ) : null,
     },
   ];
   return (
     <>
       <DataTable columns={columns} rows={txns} rowKey={(t) => t.id} loading={loading} emptyIcon={ArrowsLeftRight} emptyText={emptyText} />
       {owing && <OwedDialog key={owing.id} txn={owing} onClose={() => setOwing(null)} />}
+      {splitting && <SplitDialog key={splitting.id} txn={splitting} onClose={() => setSplitting(null)} />}
     </>
   );
 }

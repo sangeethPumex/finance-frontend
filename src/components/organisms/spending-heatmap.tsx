@@ -2,8 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
-import { useDailySpend } from "@/lib/api";
+import { useDailySpend, usePatterns } from "@/lib/api";
 import { inr } from "@/lib/money";
+import { PatternNotes } from "./insights-panels";
 
 // Grey to black; level 0 is an empty cell.
 const SHADE = ["bg-line", "bg-strong", "bg-faint", "bg-muted", "bg-ink"];
@@ -12,7 +13,7 @@ const when = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN
 
 /** A GitHub-style grid of the last 26 weeks, one cell a day, darker for heavier spending. Levels come from the backend. */
 export function SpendingHeatmap() {
-  const q = useDailySpend();
+  const q = useDailySpend(), patterns = usePatterns().data;
   const days = q.data, scroller = useRef<HTMLDivElement>(null);
   useEffect(() => { if (scroller.current) scroller.current.scrollLeft = scroller.current.scrollWidth; }, [days]); // newest weeks first on a narrow screen
   if (!days) return <p className="text-[13px] text-muted">{q.error ? q.error.message : "Loading…"}</p>;
@@ -37,6 +38,11 @@ export function SpendingHeatmap() {
       <div className="mt-3 flex items-center justify-end gap-1.5 text-[11px] text-muted">
         Less {SHADE.map((c) => <span key={c} className={cn("size-3 rounded-[2px]", c)} />)} More
       </div>
+      {patterns && patterns.notes.length > 0 && (
+        <div className="mt-4 border-t border-line pt-4">
+          <PatternNotes notes={patterns.notes} />
+        </div>
+      )}
     </div>
   );
 }

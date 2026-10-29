@@ -17,8 +17,8 @@ const NUMS: { key: Num; label: string; hint: string }[] = [
   { key: "fixedMonthly", label: "Fixed commitments (₹)", hint: "Rent, bills. EMIs go on the EMIs page" },
   { key: "bufferTarget", label: "Savings buffer target (₹)", hint: "Cash you never want to dip below" },
 ];
-const BUCKETS: { key: "mf" | "stocks" | "other"; label: string }[] = [
-  { key: "mf", label: "Mutual funds" }, { key: "stocks", label: "Stocks" }, { key: "other", label: "Other investments" },
+const BUCKETS: { key: "mf" | "other"; label: string }[] = [
+  { key: "mf", label: "Mutual funds" }, { key: "other", label: "Other investments" },
 ];
 
 const n = (v: string) => Math.max(Number(v) || 0, 0);
@@ -30,7 +30,7 @@ export default function AboutMe() {
   useEffect(() => setDraft(profile), [profile]);
 
   const edit = (p: Profile) => setDraft(p);
-  const setHolding = (k: "mf" | "stocks" | "other", f: keyof Holding, v: string) => edit({ ...draft, [k]: { ...draft[k], [f]: n(v) } });
+  const setHolding = (k: "mf" | "other", f: keyof Holding, v: string) => edit({ ...draft, [k]: { ...draft[k], [f]: n(v) } });
 
   function submit(e: React.FormEvent) {
     e.preventDefault();

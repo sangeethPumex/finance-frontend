@@ -1,11 +1,13 @@
 "use client";
 
-import { Storefront, Trash } from "@phosphor-icons/react";
+import { useState } from "react";
+import { GitMerge, Storefront, Trash } from "@phosphor-icons/react";
 import { api, useWrite, type Category, type Vendor } from "@/lib/api";
 import { Button } from "../atoms";
 import { InlineError, Tag } from "../molecules";
 import { DataTable, type Column } from "./data-table";
 import { EditDialog } from "./edit-dialog";
+import { MergeVendorDialog } from "./merge-vendor-dialog";
 
 const patch = (v: Vendor, body: object) => api(`/vendors/${v.id}`, { method: "PATCH", body });
 
@@ -52,12 +54,22 @@ function DeleteCell({ v }: { v: Vendor }) {
   );
 }
 
+function MergeCell({ v, vendors }: { v: Vendor; vendors: Vendor[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="quiet" size="icon" icon={GitMerge} aria-label={`Merge ${v.name} into another vendor`} title="Merge into another vendor" disabled={vendors.length < 2} onClick={() => setOpen(true)} />
+      {open && <MergeVendorDialog vendor={v} vendors={vendors} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
 export function VendorsTable({ vendors, categories, loading }: { vendors: Vendor[]; categories: Category[]; loading?: boolean }) {
   const columns: Column<Vendor>[] = [
     { key: "name", header: "Vendor", cell: (v) => v.name },
     { key: "category", header: "Category", cell: (v) => <span className="text-muted">{categories.find((c) => c.id === v.category_id)?.name ?? "—"}</span> },
     { key: "aliases", header: "Aliases", cell: (v) => <AliasList v={v} /> },
-    { key: "actions", header: "", align: "right", cell: (v) => <span className="flex items-center justify-end gap-1"><EditVendor v={v} categories={categories} /><DeleteCell v={v} /></span> },
+    { key: "actions", header: "", align: "right", cell: (v) => <span className="flex items-center justify-end gap-1"><EditVendor v={v} categories={categories} /><MergeCell v={v} vendors={vendors} /><DeleteCell v={v} /></span> },
   ];
   return <DataTable columns={columns} rows={vendors} rowKey={(v) => v.id} loading={loading} emptyIcon={Storefront} emptyText="No vendors yet. Save one from a transaction that needs review." />;
 }

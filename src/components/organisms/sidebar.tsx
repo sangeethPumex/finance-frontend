@@ -47,7 +47,7 @@ export function Sidebar({ groups, onSignOut }: SidebarProps) {
         </button>
       </div>
 
-      <nav className="flex gap-1 overflow-x-auto p-3 md:min-h-0 md:flex-1 md:flex-col md:overflow-y-auto">
+      <nav className="slim-scroll flex gap-1 overflow-x-auto p-3 md:min-h-0 md:flex-1 md:flex-col md:overflow-y-auto">
         {groups.map((group, g) => {
           const shut = !collapsed && closed.includes(group.title); // the icon rail always shows every icon
           return (
