@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowSquareOut, CalendarCheck, CaretRight, CreditCard, Gauge, HandCoins, LinkSimple, PencilSimple, Receipt, ShareNetwork, ShoppingBag, Wallet } from "@phosphor-icons/react";
-import type { Card } from "@/lib/api";
+import { useAccounts, useCardPayments, type Card } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { shortDate } from "@/lib/dates";
 import { inr } from "@/lib/money";
@@ -30,6 +30,32 @@ function Fact({ icon: Icon, label, children }: { icon: typeof Receipt; label: st
       <div className="flex items-center gap-1 text-[11px] font-medium text-muted"><Icon size={13} />{label}</div>
       <div className="mt-1 text-[13px] font-semibold">{children}</div>
     </div>
+  );
+}
+
+/** Bill payments linked to this card from transactions: when, how much, from which account. Loads only while the details are open. */
+function PaymentHistory({ card }: { card: Card }) {
+  const { data, isLoading, error } = useCardPayments(card.id);
+  const accounts = useAccounts().data ?? [];
+  if (isLoading) return <p className="text-muted">Loading…</p>;
+  if (error) return <p className="text-loss">{error.message}</p>;
+  if (!data?.length) return <p className="text-muted">No payments yet. Mark a bank transaction as &ldquo;Credit card payments&rdquo; and pick this card, and it shows up here.</p>;
+  const total = data.reduce((t, p) => t + p.amount_paise, 0);
+  return (
+    <>
+      <ul className="divide-y divide-line-soft">
+        {data.map((p) => {
+          const from = accounts.find((a) => a.id === p.account_id)?.name ?? (p.bank ? `${p.bank}${p.account_last4 ? ` ••${p.account_last4}` : ""}` : "");
+          return (
+            <li key={p.txn_id} className="flex items-center justify-between gap-3 py-2">
+              <span className="min-w-0"><span className="block font-medium">Paid on {shortDate(p.at)}</span>{from && <span className="block truncate text-[11px] text-muted">from {from}</span>}</span>
+              <span className="num shrink-0 font-medium">{inr(p.amount_paise)}</span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-2 flex justify-between border-t border-line pt-2 text-[12px] text-muted"><span>{data.length} payment{data.length === 1 ? "" : "s"}</span><span className="num">{inr(total)} in total</span></p>
+    </>
   );
 }
 
@@ -134,6 +160,10 @@ export function CardTile({ card: c, onEdit, defaultOpen = false }: { card: Card;
                 </ul>
               )}
             </div>
+          </div>
+          <div className="mt-6 text-[13px]">
+            <SectionTitle icon={Receipt} action={<Link href="/transactions" className="flex items-center gap-1 text-[11px] font-medium text-muted hover:text-ink">Transactions<ArrowSquareOut size={12} /></Link>}>Payment history</SectionTitle>
+            <PaymentHistory card={c} />
           </div>
           <div className="mt-6 flex border-t border-line pt-4"><Button variant="ghost" icon={PencilSimple} onClick={() => { setOpen(false); onEdit(); }}>Edit card</Button></div>
         </Modal>

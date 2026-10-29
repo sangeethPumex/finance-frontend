@@ -77,6 +77,9 @@ export async function api<T>(path: string, init?: { method?: string; body?: unkn
 const list = <T,>(key: string, path = `/${key}`) => () => useQuery({ queryKey: [key], queryFn: () => api<T[]>(path) });
 
 export const useAccounts = list<Account>("accounts");
+/** A bill payment linked to a card (a transaction in "Credit card payments"), as it is in transactions. */
+export type CardPayment = { txn_id: string; at: string; amount_paise: number; account_id?: string; bank?: string; account_last4?: string; payee?: string };
+export const useCardPayments = (id: string) => useQuery({ queryKey: ["cards", "payments", id], queryFn: () => api<CardPayment[]>(`/cards/${id}/payments`) });
 export const useCards = list<Card>("cards");
 export const useAccount = (id: string) => useQuery({ queryKey: ["account", id], queryFn: () => api<AccountDetail>(`/accounts/${id}`) });
 export const useAccountTxns = (id: string) => useQuery({ queryKey: ["transactions", "account", id], queryFn: () => api<Txn[]>(`/transactions?limit=200&account_id=${id}`) });
@@ -137,7 +140,7 @@ export const useTransactionsPage = (f: TxnFilter, page: number, limit = 50, sort
 /** What a vendor or category change can alter: names and categories show on transactions, and spend totals follow categories. */
 export const NAME_KEYS = ["vendors", "categories", "transactions", "summary", "budgets", "dashboard", "insights", "accounts"];
 /** What a change to one transaction can alter (not balances: a category never moves money). */
-export const TXN_KEYS = ["transactions", "summary", "budgets", "dashboard", "insights", "account"];
+export const TXN_KEYS = ["transactions", "summary", "budgets", "dashboard", "insights", "account", "cards"];
 
 /**
  * Runs a write, then refetches what it can have changed. keys are query-key prefixes; leave them out to refetch everything (accounts
