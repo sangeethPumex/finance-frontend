@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { ArrowDownLeft, ArrowsLeftRight, ArrowUpRight, ArrowUUpLeft, CalendarCheck, CreditCard, HandCoins, Money, PencilSimple, SplitHorizontal, type Icon } from "@phosphor-icons/react";
 import { api, TXN_KEYS, useTxnCache, useVendors, useWrite, type Account, type Card, type Category, type Txn } from "@/lib/api";
 import { shortDateTime } from "@/lib/dates";
@@ -64,7 +65,7 @@ function CategoryCell({ t, categories, cards, onSplit }: { t: Txn; categories: C
   if (!pickCategory && !pickCard) {
     return (
       <span className="flex items-center gap-1.5 text-muted">
-        {cat?.name}{needsCard && card && <> → <span className="font-medium text-ink">{card.name}{card.last4 && ` ••${card.last4}`}</span></>}
+        {cat?.name}{needsCard && card && <> → <span className="font-medium text-ink"><Link href={`/cards?card=${card.id}`} title="Open this card" className="underline-offset-2 hover:underline">{card.name}{card.last4 && ` ••${card.last4}`}</Link></span></>}
         <button type="button" aria-label="Change category" onClick={() => setEditing(true)} className="text-muted hover:text-ink"><PencilSimple size={13} /></button>
       </span>
     );

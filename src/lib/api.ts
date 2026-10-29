@@ -168,7 +168,7 @@ export function useTxnCache() {
 
 // ---- Dashboard: computed by the backend; money here is paise ----
 export type Tone = "good" | "bad" | "warn" | "neutral";
-export type FlowTone = "income" | "spend" | "discretionary" | "invest" | "gap" | "net";
+export type FlowTone = "income" | "spend" | "discretionary" | "invest" | "gap" | "net" | "card";
 export type TxnView = { id: string; vendor: string; source: string; at: string; paise: number; credit: boolean };
 export type Flow = { id: string; name: string; tone: FlowTone; paise: number; count: number; txns: TxnView[] };
 export type Next = { name: string; paise: number; days: number };
@@ -178,6 +178,8 @@ export type Dashboard = {
   cashflow: {
     incomePaise: number; spentPaise: number; investedPaise: number; netPaise: number; savingsRate?: number;
     sources: Flow[]; dests: Flow[]; earlierSpentPaise: number;
+    /** Bill payments in the period; already counted in spending, so shown beside the chart and left out of every total. */
+    cardPayments?: Flow;
     daily: { date: string; paise: number; top?: { vendor: string; category: string; paise: number } }[];
   };
   upcoming: {
@@ -210,6 +212,18 @@ export type NWPoint = { date: string; netWorthPaise: number; owedPaise?: number;
 export type NWRange = "1m" | "3m" | "6m" | "1y";
 export type NetWorth = { history: NWPoint[]; method: string; scenarios: { name: string; assumptions: string; points: NWPoint[] }[] };
 export const useNetWorth = (range: NWRange) => useQuery({ queryKey: ["networth", range], queryFn: () => api<NetWorth>(`/dashboard/networth?range=${range}`) });
+
+/** One day of the snapshot table (paise). Past days built from transactions value holdings at cost (valuation "cost"); live days at market. */
+export type DailySnapshot = {
+  date: string; accounts: { id: string; name: string; bank: string; last4: string; paise: number }[]; cashPaise: number;
+  stocks: { investedPaise: number; valuePaise: number }; mutualFunds: { investedPaise: number; valuePaise: number }; other: { investedPaise: number; valuePaise: number };
+  investedPaise: number; investmentsPaise: number; netWorthPaise: number; owedPaise?: number; cardUsedPaise?: number;
+  spentPaise: number; spentMonthPaise: number; spendTxns: number; incomePaise: number; cardPaymentsPaise: number;
+  valuation: "market" | "cost"; source: "live" | "backfill"; updatedAt: string;
+};
+/** Daily snapshots from..to (YYYY-MM-DD), oldest first; the last 30 days when left out. */
+export const useSnapshots = (from?: string, to?: string) =>
+  useQuery({ queryKey: ["snapshots", from, to], queryFn: () => api<DailySnapshot[]>(`/snapshots${from || to ? `?${new URLSearchParams({ ...(from && { from }), ...(to && { to }) })}` : ""}`), staleTime: 60_000 });
 
 export type SpendDay = { date: string; paise: number; level: 0 | 1 | 2 | 3 | 4; top?: { vendor: string; category: string; paise: number } };
 export const useDailySpend = () => useQuery({ queryKey: ["daily-spend"], queryFn: () => api<SpendDay[]>("/dashboard/daily") });

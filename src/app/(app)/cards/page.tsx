@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { CalendarCheck, CreditCard, Gauge, Plus, Wallet } from "@phosphor-icons/react";
 import { Button } from "@/components/atoms";
 import { EmptyState, RowSkeleton, StatCard, StatSkeleton } from "@/components/molecules";
@@ -9,7 +10,8 @@ import { PageLayout } from "@/components/templates";
 import { api, type Card, type CardInput, useAct, useCards } from "@/lib/api";
 import { inr } from "@/lib/money";
 
-export default function Page() {
+function Cards() {
+  const open = useSearchParams().get("card"); // from a transaction's card link: open that card's details
   const q = useCards();
   const act = useAct();
   const [saving, setSaving] = useState(false);
@@ -50,11 +52,15 @@ export default function Page() {
             <div className="mt-4 flex justify-center"><Button icon={Plus} onClick={() => setForm(null)}>Add your first card</Button></div>
           </div>
         ) : (
-          cards.map((c) => <CardTile key={c.id} card={c} onEdit={() => setForm(c)} />)
+          cards.map((c) => <CardTile key={c.id} card={c} defaultOpen={c.id === open} onEdit={() => setForm(c)} />)
         )}
       </div>
 
       {form !== undefined && <CardForm key={form?.id ?? "new"} initial={form ?? undefined} pending={saving} onSave={save} onClose={() => setForm(undefined)} />}
     </PageLayout>
   );
+}
+
+export default function Page() {
+  return <Suspense><Cards /></Suspense>;
 }

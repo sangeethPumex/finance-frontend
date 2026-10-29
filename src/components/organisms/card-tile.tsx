@@ -34,8 +34,8 @@ function Fact({ icon: Icon, label, children }: { icon: typeof Receipt; label: st
 }
 
 /** A card at a glance: limit use first, then the dates and this cycle's spends. Click for the details. */
-export function CardTile({ card: c, onEdit }: { card: Card; onEdit: () => void }) {
-  const [open, setOpen] = useState(false);
+export function CardTile({ card: c, onEdit, defaultOpen = false }: { card: Card; onEdit: () => void; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   const Icon = c.kind === "paylater" ? HandCoins : CreditCard;
   const hasLimit = !!c.limit_paise;
   const linkedActive = c.linked_emis.filter((e) => e.active).length;

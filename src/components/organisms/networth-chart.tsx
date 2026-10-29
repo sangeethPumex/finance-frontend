@@ -59,7 +59,7 @@ export function NetWorthChart() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h3 className="text-[15px] font-semibold tracking-tight">Where your net worth is heading</h3>
-          <p className="mt-0.5 text-[12px] text-muted">Recorded month-ends, then a {d.scenarios[scn]?.name.toLowerCase()} projection · {lakh(cur.netWorthPaise)} today</p>
+          <p className="mt-0.5 text-[12px] text-muted">Recorded history (daily once snapshots begin), then a {d.scenarios[scn]?.name.toLowerCase()} projection · {lakh(cur.netWorthPaise)} today</p>
         </div>
         <div className="flex flex-col gap-1.5 sm:items-end">
           <div className="flex flex-wrap gap-x-4 gap-y-1">{VIEWS.map((v) => <Link key={v.value} on={view === v.value} onClick={() => setView(v.value)}>{v.label}</Link>)}</div>

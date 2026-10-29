@@ -4,9 +4,10 @@ import type { Flow, FlowTone } from "@/lib/api";
 import { inr } from "@/lib/money";
 
 export const TONE_COLOR: Record<FlowTone, string> = {
-  income: "#15803d", spend: "#111111", discretionary: "#d97706", invest: "#2563eb", gap: "#dc2626", net: "#a3a3a3",
+  income: "#15803d", spend: "#111111", discretionary: "#d97706", invest: "#2563eb", gap: "#dc2626", net: "#a3a3a3", card: "#7c3aed",
 };
 
+const MEMO_H = 46;
 const W = 900, H = 340, NODE = 10, GAP = 8, LX = 160, MX = W / 2 - NODE / 2, RX = W - 170;
 
 type Placed = { flow: Flow; y: number; h: number };
@@ -17,8 +18,11 @@ function place(flows: Flow[], k: number): Placed[] {
 }
 const clip = (s: string) => (s.length > 20 ? `${s.slice(0, 19)}…` : s);
 
-/** Three-column money flow: sources, one pool of available money, destinations. Click a node or flow to select it. */
-export function Sankey({ sources, dests, income, selected, onSelect }: { sources: Flow[]; dests: Flow[]; income: number; selected?: string; onSelect: (f: Flow) => void }) {
+/**
+ * Three-column money flow: sources, one pool of available money, destinations. Click a node or flow to select it.
+ * memo is a figure that is already inside the destinations (card bill payments settle purchases counted as spending): it is drawn apart, with no flow.
+ */
+export function Sankey({ sources, dests, income, selected, onSelect, memo }: { sources: Flow[]; dests: Flow[]; income: number; selected?: string; onSelect: (f: Flow) => void; memo?: Flow }) {
   const total = sources.reduce((t, f) => t + f.paise, 0);
   if (total <= 0) return null;
   const k = (H - GAP * (Math.max(sources.length, dests.length) - 1)) / total;
@@ -37,7 +41,7 @@ export function Sankey({ sources, dests, income, selected, onSelect }: { sources
 
   return (
     // The labels are unreadable squeezed into a phone width, so below 640px the chart scrolls sideways inside its card.
-    <div className="overflow-x-auto"><svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Money flow from income sources to spending categories" className="h-auto w-full min-w-160">
+    <div className="overflow-x-auto"><svg viewBox={`0 0 ${W} ${H + (memo ? MEMO_H : 0)}`} role="img" aria-label="Money flow from income sources to spending categories" className="h-auto w-full min-w-160">
       {links.map(({ n, h, x0, y0, x1, y1, a, b }, i) => {
         const mid = (x0 + x1) / 2;
         return (
@@ -65,6 +69,14 @@ export function Sankey({ sources, dests, income, selected, onSelect }: { sources
           <title>{`${flow.name}: ${inr(flow.paise)}`}</title>
         </g>
       ))}
+      {memo && (
+        <g {...clickable(memo)}>
+          <rect x={RX} y={H + 14} width={NODE} height={MEMO_H - 22} fill="none" stroke={TONE_COLOR.card} strokeWidth={1.5} strokeDasharray="3 2" />
+          <text x={RX + NODE + 8} y={H + 24} fontSize="11" fill="#111111" fontWeight={selected === memo.id ? 600 : 400}>{clip(memo.name)}</text>
+          <text x={RX + NODE + 8} y={H + 37} fontSize="10" fill="#737373">{inr(memo.paise)} · already in spending</text>
+          <title>{`${memo.name}: ${inr(memo.paise)}. These pay off card purchases already counted in the spending above, so they are not added again.`}</title>
+        </g>
+      )}
     </svg></div>
   );
 }

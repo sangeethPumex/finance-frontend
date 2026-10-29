@@ -33,7 +33,7 @@ export function CashflowPanel({ cashflow: data, loading }: Props) {
         ) : empty ? (
           <EmptyState icon={ChartBar}>No income or spending in this period yet. Pick another period, or wait for new bank messages to arrive.</EmptyState>
         ) : view === "flow" ? (
-          <Sankey sources={data.sources} dests={data.dests} income={data.incomePaise} selected={sel?.id} onSelect={setSel} />
+          <Sankey sources={data.sources} dests={data.dests} income={data.incomePaise} selected={sel?.id} onSelect={setSel} memo={data.cardPayments} />
         ) : view === "trend" ? (
           <>
             <AreaChart label="Daily spending" values={data.daily.map((d) => d.paise)} color="var(--color-ink)" />
@@ -54,7 +54,7 @@ export function CashflowPanel({ cashflow: data, loading }: Props) {
           </div>
         )}
         <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
-          {([["income", "Income"], ["spend", "Spending"], ["discretionary", "Discretionary"], ["invest", "Invested"]] as const).map(([t, l]) => (
+          {([["income", "Income"], ["spend", "Spending"], ["discretionary", "Discretionary"], ["invest", "Invested"], ...(data.cardPayments ? [["card", "Card bills paid"] as const] : [])] as const).map(([t, l]) => (
             <span key={t} className="flex items-center gap-1.5"><span className="size-2" style={{ background: TONE_COLOR[t] }} />{l}</span>
           ))}
         </div>
@@ -66,7 +66,7 @@ export function CashflowPanel({ cashflow: data, loading }: Props) {
         ) : (
           <>
             <div className="num text-[24px] font-light leading-none">{inr(sel.paise)}</div>
-            <div className="mt-2 text-[12px] text-muted">{pct(sel.paise, data.incomePaise)} of income · {sel.count} transaction{sel.count === 1 ? "" : "s"}</div>
+            <div className="mt-2 text-[12px] text-muted">{sel.tone === "card" ? "Paid toward card bills; the purchases are already in spending" : `${pct(sel.paise, data.incomePaise)} of income`} · {sel.count} transaction{sel.count === 1 ? "" : "s"}</div>
             {sel.txns.length === 0 ? <p className="mt-4 text-[13px] text-muted">No individual transactions behind this figure.</p> : (
               <ul className="mt-4 divide-y divide-line-soft text-[13px]">
                 {sel.txns.map((t) => (
