@@ -82,11 +82,11 @@ export default function AboutMe() {
           </FormField>
         </Card>
         <Card title="What the AI remembers" className="xl:col-span-2">
-          {profile.memory.length === 0 ? (
+          {!profile.memory?.length ? (
             <p className="text-[13px] text-muted">Nothing yet. When you tell the AI Expert a lasting goal or preference, it is kept here and used in later answers.</p>
           ) : (
             <ul className="flex flex-wrap gap-2">
-              {profile.memory.map((f) => (
+              {profile.memory?.map((f) => (
                 <li key={f} className="flex items-center gap-1.5 rounded-full border border-line py-1 pl-3 pr-1.5 text-[13px] text-sub">
                   {f}
                   <button type="button" aria-label={`Forget: ${f}`} className="grid size-5 place-content-center rounded-full text-muted hover:bg-tint hover:text-loss" onClick={() => forget(f)}><X size={12} /></button>
