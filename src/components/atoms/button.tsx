@@ -5,7 +5,7 @@ export type ButtonVariant = "solid" | "ghost" | "quiet";
 export type ButtonSize = "sm" | "md" | "lg" | "icon";
 
 const variants: Record<ButtonVariant, string> = {
-  solid: "bg-ink text-white hover:-translate-y-px hover:scale-[1.015] hover:bg-black/80",
+  solid: "bg-ink text-white hover:-translate-y-px hover:scale-[1.015] hover:bg-ink/85",
   ghost: "border border-strong text-muted hover:bg-tint hover:text-sub",
   quiet: "text-muted hover:bg-tint hover:text-ink",
 };

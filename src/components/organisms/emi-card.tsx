@@ -66,7 +66,7 @@ function Instalments({ paid, total, active }: { paid: number; total: number; act
   return (
     <div className="flex flex-wrap gap-1" aria-hidden>
       {Array.from({ length: total }, (_, i) => (
-        <span key={i} className={cn("size-2.5 rounded-full", i < paid ? "bg-gain" : i === paid && active ? "bg-white ring-2 ring-warn" : "bg-line")} />
+        <span key={i} className={cn("size-2.5 rounded-full", i < paid ? "bg-gain" : i === paid && active ? "bg-surface ring-2 ring-warn" : "bg-line")} />
       ))}
     </div>
   );
@@ -91,7 +91,7 @@ export function EmiCard({ emi, onEdit }: { emi: EmiView; onEdit: () => void }) {
   );
 
   return (
-    <div className="border border-line bg-white">
+    <div className="border border-line bg-surface">
       <div className="flex flex-wrap items-start gap-4 p-4 md:p-5">
         {isCard ? <span className="grid size-12 shrink-0 place-items-center rounded-full bg-tint text-ink"><Icon size={20} weight="duotone" /></span> : (
           <Ring ratio={emi.repaid ?? (emi.total ? emi.paid / emi.total : 0)}>
@@ -110,7 +110,7 @@ export function EmiCard({ emi, onEdit }: { emi: EmiView; onEdit: () => void }) {
           <Button size="sm" loading={busy} disabled={!emi.active} onClick={() => post({ kind: "emi" })}>Record payment</Button>
           <details className="relative">
             <summary className="grid size-8 cursor-pointer list-none place-items-center text-muted hover:bg-tint hover:text-ink [&::-webkit-details-marker]:hidden" aria-label="More actions"><DotsThreeVertical size={18} /></summary>
-            <div className="absolute right-0 z-10 mt-1 w-44 border border-line bg-white shadow-sm">
+            <div className="absolute right-0 z-10 mt-1 w-44 border border-line bg-surface shadow-sm">
               {menu("Edit", onEdit)}
               {emi.balance !== undefined && menu("Update balance", reconcile)}
               {menu("Undo last payment", () => act(() => api(`/emis/${emi.id}/payments/last`, { method: "DELETE" }), { ok: "Last payment undone" }), history.length === 0)}

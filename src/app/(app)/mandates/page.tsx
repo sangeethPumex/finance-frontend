@@ -47,7 +47,7 @@ function Calendar({ occ }: { occ: MandateOcc[] }) {
   return (
     <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
       {[...months].map(([ym, items], n) => (
-        <details key={ym} open={n < 2} className="group rounded-lg border border-line bg-white">
+        <details key={ym} open={n < 2} className="group rounded-lg border border-line bg-surface">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
             <span className="flex items-center gap-2.5">
               <span className="grid size-7 place-items-center rounded-md bg-tint"><CalendarBlank size={15} weight="duotone" /></span>

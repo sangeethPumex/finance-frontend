@@ -26,7 +26,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-dvh bg-white md:grid-cols-[1.1fr_1fr]">
+    <main className="grid min-h-dvh bg-canvas md:grid-cols-[1.1fr_1fr]">
       <div aria-hidden className="relative h-44 bg-black bg-cover bg-center md:h-auto" style={{ backgroundImage: "url(/login-bg.jpg)" }}>
         <span className="absolute bottom-4 left-5 hidden text-[11px] uppercase tracking-[0.3em] text-white/60 md:block">Every rupee, accounted for</span>
       </div>

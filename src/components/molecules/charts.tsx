@@ -2,7 +2,7 @@ import { cn } from "@/lib/cn";
 
 export const toneText = { good: "text-gain", bad: "text-loss", warn: "text-warn", info: "text-info", neutral: "text-ink" } as const;
 export const toneBg = { good: "bg-gain", bad: "bg-loss", warn: "bg-warn", info: "bg-info", neutral: "bg-ink" } as const;
-export const toneSoft = { good: "bg-gain-bg", bad: "bg-loss-bg", warn: "bg-warn-bg", info: "bg-info-bg", neutral: "bg-white" } as const;
+export const toneSoft = { good: "bg-gain-bg", bad: "bg-loss-bg", warn: "bg-warn-bg", info: "bg-info-bg", neutral: "bg-surface" } as const;
 /** Icon chip: a light tint of the tone with the tone as the glyph colour. */
 export const toneChip = { good: "bg-gain/10 text-gain", bad: "bg-loss/10 text-loss", warn: "bg-warn/10 text-warn", info: "bg-info/10 text-info", neutral: "bg-tint text-ink" } as const;
 
@@ -18,7 +18,7 @@ export function AreaChart({ values, label, className, color = "var(--color-ink)"
   );
 }
 
-export const PALETTE = ["#111111", "#15803d", "#d97706", "#737373"];
+export const PALETTE = ["#1c1c1b", "#1f8a5b", "#c98a12", "#a9a7a1"];
 
 /** Ring split into slices; the centre shows a caption. */
 export function Donut({ slices, label, center }: { slices: { name: string; value: number }[]; label: string; center?: React.ReactNode }) {

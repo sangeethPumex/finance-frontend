@@ -84,7 +84,7 @@ export default function Stocks() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {positions.map((p) => (
-              <button key={p.symbol} type="button" aria-haspopup="dialog" onClick={() => setOpen(p.symbol)} className={cn("flex flex-col border border-t-4 border-line bg-white p-5 text-left transition-shadow hover:shadow-md", edge(p.pnl))}>
+              <button key={p.symbol} type="button" aria-haspopup="dialog" onClick={() => setOpen(p.symbol)} className={cn("flex flex-col border border-t-4 border-line bg-surface p-5 text-left transition-shadow hover:shadow-md", edge(p.pnl))}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
                     <CompanyLogo symbol={p.symbol} domain={p.domain} name={p.name ?? p.symbol} />

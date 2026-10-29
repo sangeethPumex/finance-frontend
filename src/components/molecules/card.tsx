@@ -4,8 +4,10 @@ import { cn } from "@/lib/cn";
 export type CardVariant = "outline" | "flat";
 export type CardPadding = "none" | "sm" | "md";
 
-const variants: Record<CardVariant, string> = { outline: "border border-line bg-white", flat: "bg-tint" };
+const variants: Record<CardVariant, string> = { outline: "overflow-hidden border border-line bg-surface", flat: "bg-tint" };
 const paddings: Record<CardPadding, string> = { none: "", sm: "px-4 py-3", md: "px-4 py-4 sm:px-6 sm:py-5" };
+/** Pulls the title strip out to the card's edges, undoing the padding above. */
+const bleed: Record<CardPadding, string> = { none: "", sm: "-mx-4 -mt-3", md: "-mx-4 -mt-4 sm:-mx-6 sm:-mt-5" };
 
 export type CardProps = {
   title?: string;
@@ -24,11 +26,11 @@ export function Card({ title, icon: Icon, action, variant = "outline", padding =
   return (
     <section className={cn("min-w-0 rounded-lg", variants[variant], paddings[padding], interactive && "transition-shadow duration-200 hover:shadow-[0_4px_12px_rgba(0,0,0,.08)]", className)}>
       {(title || action) && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className={cn("mb-4 flex flex-wrap items-center justify-between gap-3", title && "border-b border-line bg-tint px-4 py-2.5 sm:px-6", title && bleed[padding])}>
           {title ? (
             <div className="flex items-center gap-2.5">
-              {Icon && <span className="grid size-7 place-items-center rounded-md bg-tint text-ink"><Icon size={15} weight="duotone" /></span>}
-              <h2 className="text-[13px] font-semibold tracking-tight">{title}</h2>
+              {Icon && <Icon size={15} weight="duotone" className="text-muted" />}
+              <h2 className="eyebrow">{title}</h2>
             </div>
           ) : <span />}
           {action}

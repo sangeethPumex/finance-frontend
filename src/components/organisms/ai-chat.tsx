@@ -29,7 +29,7 @@ function AnswerView({ a }: { a: Answer }) {
       {a.metrics.length > 0 && (
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {a.metrics.map((m, i) => (
-            <div key={i} className="min-w-0 rounded-xl border border-line bg-white p-3">
+            <div key={i} className="min-w-0 rounded-xl border border-line bg-surface p-3">
               <p className="truncate text-[12px] text-muted">{m.label}</p>
               <p className="num mt-0.5 truncate text-[18px] font-semibold text-ink">{m.rupees !== undefined ? inr(Math.round(m.rupees * 100)) : m.text}</p>
               <p className="mt-1 flex items-center gap-1.5 text-[11px] text-muted"><i className={cn("size-1.5 shrink-0 rounded-full", SOURCE[m.source].dot)} />{SOURCE[m.source].label}</p>
@@ -131,7 +131,7 @@ export function AiChat() {
         </div>
       </header>
       {past && (
-        <div className="mb-3 max-h-56 shrink-0 overflow-y-auto rounded-xl border border-line bg-white">
+        <div className="mb-3 max-h-56 shrink-0 overflow-y-auto rounded-xl border border-line bg-surface">
           {past.length === 0 ? <p className="p-4 text-[13px] text-muted">No saved chats yet.</p> : past.map((c) => (
             <div key={c.id} className="flex items-center gap-2 border-b border-line-soft px-3 py-2 last:border-0">
               <button type="button" onClick={() => load(c.id)} className="min-w-0 flex-1 text-left"><span className="block truncate text-[13px] text-ink">{c.title}</span><span className="text-[11px] text-muted">{new Date(c.updatedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</span></button>
@@ -150,7 +150,7 @@ export function AiChat() {
                 <p className="mt-1 text-[13px] text-muted">Answers use your recorded numbers, exact lookups and what you have told me.</p>
               </div>
               <div className="grid w-full gap-2 sm:grid-cols-2">
-                {SUGGESTIONS.map((q) => <button key={q} type="button" onClick={() => send(q)} className="rounded-xl border border-line bg-white px-4 py-3 text-left text-[13px] text-sub transition-colors hover:border-orange-400 hover:bg-orange-50">{q}</button>)}
+                {SUGGESTIONS.map((q) => <button key={q} type="button" onClick={() => send(q)} className="rounded-xl border border-line bg-surface px-4 py-3 text-left text-[13px] text-sub transition-colors hover:border-orange-400 hover:bg-orange-50">{q}</button>)}
               </div>
             </div>
           ) : msgs.map((m, i) => (
@@ -169,10 +169,10 @@ export function AiChat() {
           ))}
         </div>
       </div>
-      <div className="shrink-0 border-t border-line bg-white pb-1 pt-3">
+      <div className="shrink-0 border-t border-line bg-surface pb-1 pt-3">
         <div className={COL}>
           {error && <p role="alert" className="pb-2 text-[13px] text-loss">{error}</p>}
-          <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="flex items-end gap-2 rounded-2xl border border-strong bg-white p-2 focus-within:border-orange-500">
+          <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="flex items-end gap-2 rounded-2xl border border-strong bg-surface p-2 focus-within:border-orange-500">
             <textarea
               ref={box} value={input} rows={1} aria-label="Ask a question" placeholder="Ask about your money…"
               onChange={(e) => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = `${e.target.scrollHeight}px`; }}

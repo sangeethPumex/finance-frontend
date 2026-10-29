@@ -36,7 +36,7 @@ export function PayoffPlanner() {
   const best = ava.interest <= snow.interest ? "avalanche" : "snowball";
 
   return (
-    <section className="mt-4 border border-line bg-white p-5">
+    <section className="mt-4 border border-line bg-surface p-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-[15px] font-semibold">Payoff planner</h2>

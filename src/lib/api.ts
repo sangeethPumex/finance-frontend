@@ -26,6 +26,8 @@ export type Card = {
   linked_emis: LinkedEmi[]; linked_monthly_paise: number; linked_left_paise: number;
   used_paise: number; available_paise?: number; utilisation?: number; days_to_billing?: number; days_to_due?: number;
   apr?: number; statement?: Statement;
+  /** Bill payments linked from transactions: how many, and the latest. */
+  payments: number; last_payment_at?: string; last_payment_paise?: number;
 };
 /** The last closed bill and what is still owed on it (estimated from transactions). */
 export type Statement = {

@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 export function NavItem({ label, icon: Icon, href, onClick, active, collapsed, ai }: { label: string; icon: Icon; href?: string; onClick?: () => void; active?: boolean; collapsed?: boolean; ai?: boolean }) {
   const className = cn(
     "group flex h-10 w-full items-center gap-3 whitespace-nowrap rounded-md px-3 text-sm transition-colors",
-    active ? (ai ? "bg-tint font-medium" : "bg-ink font-medium text-white") : "text-muted hover:bg-hover hover:text-sub",
+    active ? "border border-line bg-surface font-medium text-ink shadow-[0_1px_2px_rgba(28,28,27,.06)]" : "border border-transparent text-muted hover:bg-black/[0.04] hover:text-sub",
     collapsed && "md:justify-center md:px-0",
   );
   const body = (

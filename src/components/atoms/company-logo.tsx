@@ -18,7 +18,7 @@ export function CompanyLogo({ symbol, domain, name, className }: { symbol?: stri
   const [failed, setFailed] = useState(0);
   const src = sources(symbol, domain)[failed];
   return (
-    <span className={cn("grid size-10 shrink-0 place-items-center overflow-hidden rounded-md border border-line bg-white text-[14px] font-medium text-muted", className)}>
+    <span className={cn("grid size-10 shrink-0 place-items-center overflow-hidden rounded-md border border-line bg-surface text-[14px] font-medium text-muted", className)}>
       {src
         // eslint-disable-next-line @next/next/no-img-element
         ? <img key={src} src={src} alt="" loading="lazy" onError={() => setFailed((n) => n + 1)} className="size-full object-contain p-1.5" />

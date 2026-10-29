@@ -174,7 +174,7 @@ export default function Funds() {
       ) : (
         <div className="space-y-4">
           {groups.map((grp) => (
-            <section key={grp.key} className="overflow-hidden border border-line bg-white">
+            <section key={grp.key} className="overflow-hidden border border-line bg-surface">
               <GroupBar icon={grp.icon} title={grp.title} sub={grp.sub} funds={grp.funds} />
               <FundListHeader />
               <div className="divide-y divide-line-soft">
@@ -183,7 +183,7 @@ export default function Funds() {
             </section>
           ))}
           {gone.length > 0 && (
-            <details className="group overflow-hidden border border-line bg-white">
+            <details className="group overflow-hidden border border-line bg-surface">
               <summary className="flex cursor-pointer list-none items-center gap-2 bg-tint px-4 py-2.5 text-[13px] font-semibold [&::-webkit-details-marker]:hidden">
                 <SignOut size={16} weight="duotone" className="text-sub" />Moved out<span className="text-[12px] font-normal text-muted">{gone.length} fund{gone.length === 1 ? "" : "s"}</span>
                 <CaretDown size={14} className="ml-auto text-muted transition-transform group-open:rotate-180" />

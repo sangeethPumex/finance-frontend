@@ -16,8 +16,8 @@ export function Modal({ title, subtitle, icon, onClose, children, wide }: { titl
   }, [onClose]);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" aria-label={title} className={`max-h-[92dvh] w-full ${wide ? "sm:max-w-[760px]" : "sm:max-w-[520px]"} overflow-y-auto rounded-t-2xl border border-line bg-white pb-[env(safe-area-inset-bottom)] shadow-xl sm:rounded-lg`}>
-        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-line bg-white px-4 py-4 sm:px-6">
+      <div role="dialog" aria-modal="true" aria-label={title} className={`max-h-[92dvh] w-full ${wide ? "sm:max-w-[760px]" : "sm:max-w-[520px]"} overflow-y-auto rounded-t-2xl border border-line bg-surface pb-[env(safe-area-inset-bottom)] shadow-xl sm:rounded-lg`}>
+        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-line bg-surface px-4 py-4 sm:px-6">
           {icon && <IconTile icon={icon} variant="solid" size="sm" />}
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-[17px] font-semibold leading-tight tracking-tight">{title}</h2>

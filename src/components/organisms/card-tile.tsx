@@ -68,7 +68,7 @@ export function CardTile({ card: c, onEdit, defaultOpen = false }: { card: Card;
   const st = c.statement;
 
   return (
-    <div className="border border-line bg-white">
+    <div className="border border-line bg-surface">
       <button type="button" aria-haspopup="dialog" onClick={() => setOpen(true)} className="block w-full p-5 text-left">
         <div className="flex items-center gap-3">
           <BankLogo bank={c.bank} className="size-10" />
@@ -97,6 +97,10 @@ export function CardTile({ card: c, onEdit, defaultOpen = false }: { card: Card;
           <Fact icon={Receipt} label="Billing">{c.billing_day ? <>{ord(c.billing_day)}<span className="block text-[11px] font-normal text-muted">{c.days_to_billing !== undefined && inDays(c.days_to_billing)}</span></> : <span className="text-muted">Not set</span>}</Fact>
           <Fact icon={CalendarCheck} label="Pay by">{c.due_day ? <>{ord(c.due_day)}<span className="block text-[11px] font-normal text-muted">{c.days_to_due !== undefined && inDays(c.days_to_due)}</span></> : <span className="text-muted">Not set</span>}</Fact>
           <Fact icon={ShoppingBag} label="This cycle"><span className="num">{inr(c.cycle_spent_paise)}</span><span className="block text-[11px] font-normal text-muted">{c.cycle_txns} spend{c.cycle_txns === 1 ? "" : "s"}</span></Fact>
+        </div>
+        <div className="mt-3 flex items-center gap-1.5 text-[12px] text-sub">
+          <Receipt size={13} className="shrink-0 text-muted" />
+          {c.last_payment_at ? <><span>Last paid <span className="num font-semibold">{inr(c.last_payment_paise ?? 0)}</span> on {shortDate(c.last_payment_at)}</span><span className="ml-auto text-muted">{c.payments} payment{c.payments === 1 ? "" : "s"}</span></> : <span className="text-muted">No payments linked yet</span>}
         </div>
         {st && st.unpaid_paise > 0 && (
           <div className={cn("mt-4 px-3 py-2 text-[12px]", st.overdue ? "bg-loss-bg text-loss" : st.remind ? "bg-warn/10 text-warn" : "bg-tint text-sub")}>

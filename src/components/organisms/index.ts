@@ -8,6 +8,7 @@ export * from "./data-table";
 export * from "./pager";
 export * from "./search-box";
 export * from "./sidebar";
+export * from "./app-header";
 export * from "./mobile-nav";
 export * from "./transactions-table";
 export * from "./transactions-filters";

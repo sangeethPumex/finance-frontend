@@ -47,7 +47,7 @@ export function LoanSchedule({ id }: { id: string }) {
       </div>
       <div className="max-h-[60dvh] overflow-auto rounded-md border border-line">
         <table className="w-full text-[12px]">
-          <thead className="sticky top-0 bg-white text-muted">
+          <thead className="sticky top-0 bg-surface text-muted">
             <tr className="border-b border-line">{COLS.map(([h, wide], i) => <th key={h} className={cn("px-3 py-2 text-left font-medium", wide && WIDE, i > 0 && i < 7 && "text-right")}>{h}</th>)}</tr>
           </thead>
           <tbody>

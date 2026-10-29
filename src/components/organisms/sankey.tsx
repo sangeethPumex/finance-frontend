@@ -4,7 +4,7 @@ import type { Flow, FlowTone } from "@/lib/api";
 import { inr } from "@/lib/money";
 
 export const TONE_COLOR: Record<FlowTone, string> = {
-  income: "#15803d", spend: "#111111", discretionary: "#d97706", invest: "#2563eb", gap: "#dc2626", net: "#a3a3a3", card: "#7c3aed",
+  income: "#1f8a5b", spend: "#1c1c1b", discretionary: "#c98a12", invest: "#3b6fd4", gap: "#d64545", net: "#a9a7a1", card: "#7c3aed",
 };
 
 const MEMO_H = 46;
@@ -51,12 +51,12 @@ export function Sankey({ sources, dests, income, selected, onSelect, memo }: { s
           </path>
         );
       })}
-      <rect x={MX} y={poolY} width={NODE} height={poolH} fill="#111111" />
+      <rect x={MX} y={poolY} width={NODE} height={poolH} fill="#1c1c1b" />
       <text x={MX + NODE / 2} y={poolY - 8} textAnchor="middle" fontSize="11" fill="#737373">Available money · {inr(total)}</text>
       {left.map(({ flow, y, h }) => (
         <g key={flow.id} {...clickable(flow)}>
           <rect x={LX} y={y} width={NODE} height={h} fill={TONE_COLOR[flow.tone]} />
-          <text x={LX - 8} y={y + h / 2 - 2} textAnchor="end" fontSize="11" fill="#111111">{clip(flow.name)}</text>
+          <text x={LX - 8} y={y + h / 2 - 2} textAnchor="end" fontSize="11" fill="#1c1c1b">{clip(flow.name)}</text>
           <text x={LX - 8} y={y + h / 2 + 11} textAnchor="end" fontSize="10" fill="#737373">{inr(flow.paise)}</text>
           <title>{`${flow.name}: ${inr(flow.paise)}`}</title>
         </g>
@@ -64,7 +64,7 @@ export function Sankey({ sources, dests, income, selected, onSelect, memo }: { s
       {right.map(({ flow, y, h }) => (
         <g key={flow.id} {...clickable(flow)}>
           <rect x={RX} y={y} width={NODE} height={h} fill={TONE_COLOR[flow.tone]} />
-          <text x={RX + NODE + 8} y={y + h / 2 - 2} fontSize="11" fill="#111111" fontWeight={selected === flow.id ? 600 : 400}>{clip(flow.name)}</text>
+          <text x={RX + NODE + 8} y={y + h / 2 - 2} fontSize="11" fill="#1c1c1b" fontWeight={selected === flow.id ? 600 : 400}>{clip(flow.name)}</text>
           <text x={RX + NODE + 8} y={y + h / 2 + 11} fontSize="10" fill="#737373">{inr(flow.paise)}{income > 0 ? ` · ${Math.round((flow.paise / income) * 100)}%` : ""}</text>
           <title>{`${flow.name}: ${inr(flow.paise)}`}</title>
         </g>
@@ -72,7 +72,7 @@ export function Sankey({ sources, dests, income, selected, onSelect, memo }: { s
       {memo && (
         <g {...clickable(memo)}>
           <rect x={RX} y={H + 14} width={NODE} height={MEMO_H - 22} fill="none" stroke={TONE_COLOR.card} strokeWidth={1.5} strokeDasharray="3 2" />
-          <text x={RX + NODE + 8} y={H + 24} fontSize="11" fill="#111111" fontWeight={selected === memo.id ? 600 : 400}>{clip(memo.name)}</text>
+          <text x={RX + NODE + 8} y={H + 24} fontSize="11" fill="#1c1c1b" fontWeight={selected === memo.id ? 600 : 400}>{clip(memo.name)}</text>
           <text x={RX + NODE + 8} y={H + 37} fontSize="10" fill="#737373">{inr(memo.paise)} · already in spending</text>
           <title>{`${memo.name}: ${inr(memo.paise)}. These pay off card purchases already counted in the spending above, so they are not added again.`}</title>
         </g>
