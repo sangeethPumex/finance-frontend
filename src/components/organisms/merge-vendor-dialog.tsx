@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { GitMerge } from "@phosphor-icons/react";
-import { api, useAct, type Vendor } from "@/lib/api";
+import { api, NAME_KEYS, useAct, useVendors, type Vendor } from "@/lib/api";
 import { Button, Select } from "../atoms";
 import { FormField, Modal } from "../molecules";
 
 /** Folds a duplicate vendor ("SWIGGY") into another ("Swiggy Instamart"): its transactions move over and its names become aliases of the target. */
-export function MergeVendorDialog({ vendor, vendors, onClose }: { vendor: Vendor; vendors: Vendor[]; onClose: () => void }) {
-  const act = useAct();
+export function MergeVendorDialog({ vendor, onClose }: { vendor: Vendor; onClose: () => void }) {
+  const act = useAct(NAME_KEYS);
+  const vendors = useVendors().data ?? []; // every vendor, not just the visible page; fetched only while this dialog is open
   const [into, setInto] = useState("");
   const target = vendors.find((v) => v.id === into);
   return (

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowDownLeft, ArrowsLeftRight, ArrowUpRight, ArrowUUpLeft, CalendarCheck, CreditCard, HandCoins, Money, PencilSimple, SplitHorizontal, type Icon } from "@phosphor-icons/react";
-import { api, useTxnCache, useVendors, useWrite, type Account, type Card, type Category, type Txn } from "@/lib/api";
+import { api, TXN_KEYS, useTxnCache, useVendors, useWrite, type Account, type Card, type Category, type Txn } from "@/lib/api";
 import { shortDateTime } from "@/lib/dates";
 import { inr } from "@/lib/money";
 import { cn } from "@/lib/cn";
@@ -11,7 +11,7 @@ import { Button, Select } from "../atoms";
 import { OwedDialog } from "./owed-dialog";
 import { SplitDialog } from "./split-dialog";
 import { InlineError } from "../molecules";
-import { DataTable, type Column } from "./data-table";
+import { DataTable, type Column, type DataTableProps } from "./data-table";
 
 const TYPE_ICON: Record<string, Icon> = { atm: Money, emi: CalendarCheck, card_bill_payment: CreditCard, refund: ArrowUUpLeft };
 
@@ -28,7 +28,7 @@ function ReviewCell({ t, categories }: { t: Txn; categories: Category[] }) {
   const [cat, setCat] = useState(t.suggested_category_id ?? "");
   const setTxn = useTxnCache();
   const save = useWrite(() =>
-    api("/vendors", { method: "POST", body: { name: vendorLabel(t), category_id: cat, aliases: [(t.upi_id || t.raw_vendor || "").toLowerCase()] } }));
+    api("/vendors", { method: "POST", body: { name: vendorLabel(t), category_id: cat, aliases: [(t.upi_id || t.raw_vendor || "").toLowerCase()] } }), ["vendors", ...TXN_KEYS]);
   return (
     <span className="flex items-center gap-1.5">
       <Select size="sm" value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Category">
@@ -50,7 +50,7 @@ const CARD_PAYMENTS = "Credit card payments";
 function CategoryCell({ t, categories, cards, onSplit }: { t: Txn; categories: Category[]; cards: Card[]; onSplit: () => void }) {
   const [editing, setEditing] = useState(false);
   const setTxn = useTxnCache();
-  const patch = useWrite((body: { category_id?: string; paid_card_id?: string }) => api(`/transactions/${t.id}`, { method: "PATCH", body }));
+  const patch = useWrite((body: { category_id?: string; paid_card_id?: string }) => api(`/transactions/${t.id}`, { method: "PATCH", body }), TXN_KEYS);
   const cat = categories.find((c) => c.id === t.category_id);
   const needsCard = cat?.name === CARD_PAYMENTS && isDebit(t) !== false;
   const card = cards.find((c) => c.id === t.paid_card_id);
@@ -97,19 +97,23 @@ export type TransactionsTableProps = {
   categories: Category[];
   loading?: boolean;
   emptyText?: string;
+  sort?: DataTableProps<Txn>["sort"];
+  onSort?: (field: string) => void;
 };
 
-export function TransactionsTable({ txns, accounts, cards, categories, loading, emptyText = "No transactions yet" }: TransactionsTableProps) {
+export function TransactionsTable({ txns, accounts, cards, categories, loading, emptyText = "No transactions yet", sort, onSort }: TransactionsTableProps) {
   const [owing, setOwing] = useState<Txn | null>(null);
   const [splitting, setSplitting] = useState<Txn | null>(null);
-  const vendors = useVendors().data ?? [];
+  const vendors = useVendors().data;
+  const names = useMemo(() => new Map((vendors ?? []).map((v) => [v.id, v.name])), [vendors]);
   // A saved vendor's name beats the raw UPI id / SMS text.
-  const nameOf = (t: Txn) => vendors.find((v) => v.id === t.vendor_id)?.name ?? vendorLabel(t);
+  const nameOf = (t: Txn) => (t.vendor_id && names.get(t.vendor_id)) || vendorLabel(t);
   const columns: Column<Txn>[] = [
-    { key: "date", header: "Date", cell: (t) => <span className="whitespace-nowrap text-muted">{shortDateTime(t.received_at ?? t.occurred_at)}</span> },
+    { key: "date", header: "Date", sortKey: "date", cell: (t) => <span className="whitespace-nowrap text-muted">{shortDateTime(t.received_at ?? t.occurred_at)}</span> },
     {
       key: "vendor",
       header: "Vendor",
+      sortKey: "vendor",
       cell: (t) => <span className="flex items-center gap-3"><DirectionBadge t={t} /><span className="font-medium text-ink">{nameOf(t)}</span></span>,
     },
     {
@@ -120,7 +124,7 @@ export function TransactionsTable({ txns, accounts, cards, categories, loading, 
         : <CategoryCell t={t} categories={categories} cards={cards} onSplit={() => setSplitting(t)} />,
     },
     { key: "account", header: "Account", cell: (t) => <span className="text-muted">{sourceLabel(t, accounts, cards)}</span> },
-    { key: "amount", header: "Amount", align: "right", cell: (t) => <span className={cn("num font-medium", isDebit(t) === false ? "text-gain" : isDebit(t) ? "text-loss" : "text-sub")}>{signed(t) > 0 ? "+" : ""}{inr(signed(t))}</span> },
+    { key: "amount", header: "Amount", sortKey: "amount", align: "right", cell: (t) => <span className={cn("num font-medium", isDebit(t) === false ? "text-gain" : isDebit(t) ? "text-loss" : "text-sub")}>{signed(t) > 0 ? "+" : ""}{inr(signed(t))}</span> },
     {
       key: "owed",
       header: "",
@@ -136,7 +140,7 @@ export function TransactionsTable({ txns, accounts, cards, categories, loading, 
   ];
   return (
     <>
-      <DataTable columns={columns} rows={txns} rowKey={(t) => t.id} loading={loading} emptyIcon={ArrowsLeftRight} emptyText={emptyText} />
+      <DataTable columns={columns} rows={txns} rowKey={(t) => t.id} loading={loading} sort={sort} onSort={onSort} emptyIcon={ArrowsLeftRight} emptyText={emptyText} />
       {owing && <OwedDialog key={owing.id} txn={owing} onClose={() => setOwing(null)} />}
       {splitting && <SplitDialog key={splitting.id} txn={splitting} onClose={() => setSplitting(null)} />}
     </>

@@ -2,17 +2,17 @@
 
 import { useState } from "react";
 import { GitMerge, Storefront, Trash } from "@phosphor-icons/react";
-import { api, useListCache, useWrite, type Category, type Vendor } from "@/lib/api";
+import { api, NAME_KEYS, useListCache, useWrite, type Category, type Vendor } from "@/lib/api";
 import { Button } from "../atoms";
 import { InlineError, Tag } from "../molecules";
-import { DataTable, type Column } from "./data-table";
+import { DataTable, type Column, type DataTableProps } from "./data-table";
 import { EditDialog } from "./edit-dialog";
 import { MergeVendorDialog } from "./merge-vendor-dialog";
 
 const patch = (v: Vendor, body: object) => api(`/vendors/${v.id}`, { method: "PATCH", body });
 
 function EditVendor({ v, categories }: { v: Vendor; categories: Category[] }) {
-  const save = useWrite((body: object) => patch(v, body));
+  const save = useWrite((body: object) => patch(v, body), NAME_KEYS);
   const setVendors = useListCache<Vendor>("vendors");
   return (
     <EditDialog
@@ -41,7 +41,7 @@ function AliasList({ v }: { v: Vendor }) {
 }
 
 function DeleteCell({ v }: { v: Vendor }) {
-  const del = useWrite(() => api(`/vendors/${v.id}`, { method: "DELETE" }));
+  const del = useWrite(() => api(`/vendors/${v.id}`, { method: "DELETE" }), NAME_KEYS);
   const setVendors = useListCache<Vendor>("vendors");
   return (
     <span className="flex items-center justify-end">
@@ -58,22 +58,25 @@ function DeleteCell({ v }: { v: Vendor }) {
   );
 }
 
-function MergeCell({ v, vendors }: { v: Vendor; vendors: Vendor[] }) {
+function MergeCell({ v, canMerge }: { v: Vendor; canMerge: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button variant="quiet" size="icon" icon={GitMerge} aria-label={`Merge ${v.name} into another vendor`} title="Merge into another vendor" disabled={vendors.length < 2} onClick={() => setOpen(true)} />
-      {open && <MergeVendorDialog vendor={v} vendors={vendors} onClose={() => setOpen(false)} />}
+      <Button variant="quiet" size="icon" icon={GitMerge} aria-label={`Merge ${v.name} into another vendor`} title="Merge into another vendor" disabled={!canMerge} onClick={() => setOpen(true)} />
+      {open && <MergeVendorDialog vendor={v} onClose={() => setOpen(false)} />}
     </>
   );
 }
 
-export function VendorsTable({ vendors, categories, loading }: { vendors: Vendor[]; categories: Category[]; loading?: boolean }) {
+export function VendorsTable({ vendors, total, categories, loading, emptyText, sort, onSort }: {
+  vendors: Vendor[]; total: number; categories: Category[]; loading?: boolean; emptyText?: string; sort?: DataTableProps<Vendor>["sort"]; onSort?: (field: string) => void;
+}) {
+  const names = new Map(categories.map((c) => [c.id, c.name]));
   const columns: Column<Vendor>[] = [
-    { key: "name", header: "Vendor", cell: (v) => v.name },
-    { key: "category", header: "Category", cell: (v) => <span className="text-muted">{categories.find((c) => c.id === v.category_id)?.name ?? "—"}</span> },
+    { key: "name", header: "Vendor", sortKey: "name", cell: (v) => v.name },
+    { key: "category", header: "Category", cell: (v) => <span className="text-muted">{(v.category_id && names.get(v.category_id)) || "—"}</span> },
     { key: "aliases", header: "Aliases", cell: (v) => <AliasList v={v} /> },
-    { key: "actions", header: "", align: "right", cell: (v) => <span className="flex items-center justify-end gap-1"><EditVendor v={v} categories={categories} /><MergeCell v={v} vendors={vendors} /><DeleteCell v={v} /></span> },
+    { key: "actions", header: "", align: "right", cell: (v) => <span className="flex items-center justify-end gap-1"><EditVendor v={v} categories={categories} /><MergeCell v={v} canMerge={total > 1} /><DeleteCell v={v} /></span> },
   ];
-  return <DataTable columns={columns} rows={vendors} rowKey={(v) => v.id} loading={loading} emptyIcon={Storefront} emptyText="No vendors yet. Save one from a transaction that needs review." />;
+  return <DataTable columns={columns} rows={vendors} rowKey={(v) => v.id} loading={loading} sort={sort} onSort={onSort} emptyIcon={Storefront} emptyText={emptyText ?? "No vendors yet. Save one from a transaction that needs review."} />;
 }

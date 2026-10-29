@@ -5,6 +5,8 @@ export * from "./categories-table";
 export * from "./create-form";
 export * from "./dashboard-panels";
 export * from "./data-table";
+export * from "./pager";
+export * from "./search-box";
 export * from "./sidebar";
 export * from "./mobile-nav";
 export * from "./transactions-table";

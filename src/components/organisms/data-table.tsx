@@ -1,4 +1,4 @@
-import type { Icon } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, type Icon } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { EmptyState } from "../molecules";
 
@@ -8,6 +8,8 @@ export type Column<T> = {
   cell: (row: T) => React.ReactNode;
   align?: "left" | "right";
   className?: string;
+  /** The name the server sorts this column by. Set it to make the header a sort button (needs sort and onSort on the table). */
+  sortKey?: string;
 };
 
 export type DataTableProps<T> = {
@@ -17,10 +19,12 @@ export type DataTableProps<T> = {
   loading?: boolean;
   emptyText?: string;
   emptyIcon?: Icon;
+  sort?: { field: string; dir: "asc" | "desc" };
+  onSort?: (field: string) => void;
 };
 
 /** Bordered table with a tinted header row and soft dividers. Shows an empty state when there are no rows. */
-export function DataTable<T>({ columns, rows, rowKey, loading, emptyText = "Nothing here yet", emptyIcon }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, loading, emptyText = "Nothing here yet", emptyIcon, sort, onSort }: DataTableProps<T>) {
   if (rows.length === 0) return loading ? null : <EmptyState icon={emptyIcon}>{emptyText}</EmptyState>;
   const [title, ...rest] = columns;
   const actions = rest.filter((c) => !c.header);
@@ -52,7 +56,14 @@ export function DataTable<T>({ columns, rows, rowKey, loading, emptyText = "Noth
           <thead>
             <tr className="border-b border-line bg-subtle">
               {columns.map((c) => (
-                <th key={c.key} className={cn("px-4 py-2.5 text-[13px] font-medium text-muted", c.align === "right" && "text-right", c.className)}>{c.header}</th>
+                <th key={c.key} aria-sort={c.sortKey && sort?.field === c.sortKey ? (sort.dir === "asc" ? "ascending" : "descending") : undefined} className={cn("px-4 py-2.5 text-[13px] font-medium text-muted", c.align === "right" && "text-right", c.className)}>
+                  {c.sortKey && onSort ? (
+                    <button type="button" onClick={() => onSort(c.sortKey!)} className="inline-flex items-center gap-1 hover:text-ink">
+                      {c.header}
+                      {sort?.field === c.sortKey && (sort.dir === "asc" ? <CaretUp size={12} weight="bold" /> : <CaretDown size={12} weight="bold" />)}
+                    </button>
+                  ) : c.header}
+                </th>
               ))}
             </tr>
           </thead>

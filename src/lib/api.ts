@@ -82,6 +82,21 @@ export const useAccount = (id: string) => useQuery({ queryKey: ["account", id], 
 export const useAccountTxns = (id: string) => useQuery({ queryKey: ["transactions", "account", id], queryFn: () => api<Txn[]>(`/transactions?limit=200&account_id=${id}`) });
 export const useCategories = list<Category>("categories");
 export const useVendors = list<Vendor>("vendors");
+
+/** A paged list request (POST .../search). Filter keys are per list; blanks are dropped before sending. */
+export type Sort = { field: string; dir: "asc" | "desc" };
+export type PageReq = { page: number; limit: number; search?: string; sort?: Sort; filter?: Record<string, string> };
+export type Paged<T> = { items: T[]; page: number; limit: number; total: number; pages: number };
+const clean = (r: PageReq): PageReq => ({ ...r, search: r.search?.trim() || undefined, filter: Object.fromEntries(Object.entries(r.filter ?? {}).filter(([, v]) => v)) });
+const paged = <T,>(key: string) => (req: PageReq) =>
+  useQuery({
+    queryKey: [key, "page", req],
+    queryFn: () => api<Paged<T>>(`/${key}/search`, { method: "POST", body: clean(req) }),
+    placeholderData: (prev) => prev, // keep the old rows on screen while the next page or a search loads
+  });
+/** One page of vendors or categories: search, sort and filter all happen on the server. */
+export const useVendorsPage = paged<Vendor>("vendors");
+export const useCategoriesPage = paged<Category>("categories");
 export type BudgetStatus = { id: string; category_id: string; limit_paise: number; spent_paise: number; ratio: number; level: "ok" | "warn" | "over" };
 export const useBudgets = () => useQuery({ queryKey: ["budgets"], queryFn: () => api<BudgetStatus[]>("/budgets") });
 
@@ -110,26 +125,36 @@ export const useTransactions = (f: TxnFilter = {}, limit = 100) =>
     placeholderData: (prev) => prev, // keep the old rows while a typed search loads
   });
 
-export type TxnPage = { items: Txn[]; page: number; limit: number; total: number; pages: number };
-/** One page of the filtered list (POST /transactions/search). status: review | uncategorised | attention. min and max are rupees. */
-export const useTransactionsPage = (f: TxnFilter, page: number, limit = 50) =>
+export type TxnPage = Paged<Txn>;
+/** One page of the filtered list (POST /transactions/search). status: review | uncategorised | attention. min and max are rupees. sort.field: date | amount | vendor | type. */
+export const useTransactionsPage = (f: TxnFilter, page: number, limit = 50, sort?: Sort) =>
   useQuery({
-    queryKey: ["transactions", "page", f, page, limit],
-    queryFn: () => api<TxnPage>("/transactions/search", { method: "POST", body: { page, limit, filter: Object.fromEntries(Object.entries(f).filter(([, v]) => v)) } }),
+    queryKey: ["transactions", "page", f, page, limit, sort],
+    queryFn: () => api<TxnPage>("/transactions/search", { method: "POST", body: { page, limit, sort, filter: Object.fromEntries(Object.entries(f).filter(([, v]) => v)) } }),
     placeholderData: (prev) => prev, // keep the old rows while the next page or a typed search loads
   });
 
-/** Runs a write, then refetches everything (accounts balances, transactions and vendors all depend on each other). */
-export function useWrite<V>(fn: (v: V) => Promise<unknown>) {
+/** What a vendor or category change can alter: names and categories show on transactions, and spend totals follow categories. */
+export const NAME_KEYS = ["vendors", "categories", "transactions", "summary", "budgets", "dashboard", "insights", "accounts"];
+/** What a change to one transaction can alter (not balances: a category never moves money). */
+export const TXN_KEYS = ["transactions", "summary", "budgets", "dashboard", "insights", "account"];
+
+/**
+ * Runs a write, then refetches what it can have changed. keys are query-key prefixes; leave them out to refetch everything (accounts
+ * balances, transactions and vendors all depend on each other). Only queries on screen refetch now; the rest are just marked stale.
+ */
+export function useWrite<V>(fn: (v: V) => Promise<unknown>, keys?: string[]) {
   const qc = useQueryClient();
   // The refetch runs in the background (not returned), so the caller sees "done" as soon as the server has answered; a failure refetches to undo any optimistic edit.
-  return useMutation({ mutationFn: fn, onSuccess: () => { void qc.invalidateQueries(); }, onError: () => { void qc.invalidateQueries(); } });
+  const refresh = () => { void (keys ? Promise.all(keys.map((k) => qc.invalidateQueries({ queryKey: [k] }))) : qc.invalidateQueries()); };
+  return useMutation({ mutationFn: fn, onSuccess: refresh, onError: refresh });
 }
 
-/** Edits a cached list (key "vendors", "categories", ...) at once, before the server has answered; a failed write refetches and undoes it. */
+/** Edits a cached list (key "vendors", "categories", ...) at once, before the server has answered, in the plain list and in every cached page; a failed write refetches and undoes it. */
 export function useListCache<T>(key: string) {
   const qc = useQueryClient();
-  return (fn: (rows: T[]) => T[]) => qc.setQueryData<T[]>([key], (d) => (d ? fn(d) : d));
+  return (fn: (rows: T[]) => T[]) =>
+    qc.setQueriesData<T[] | Paged<T>>({ queryKey: [key] }, (d) => (Array.isArray(d) ? fn(d) : d && "items" in d ? { ...d, items: fn(d.items) } : d));
 }
 
 /** Shows an edit to one transaction at once, in every cached list (paged or plain), before the server has answered. */
@@ -278,9 +303,9 @@ export type StockSummary = { invested: number; value: number; pnl: number; pnlPc
 export type StockInput = { symbol: string; quantity: number; buyPrice: number; buyDate: string; platform?: string };
 export const useStocks = () => useQuery({ queryKey: ["stocks"], queryFn: () => api<{ summary: StockSummary; positions: StockPosition[] }>("/stocks") });
 
-/** Runs any backend write, then refetches everything. Success and failure both show a toast. */
-export function useAct() {
-  const w = useWrite((fn: () => Promise<unknown>) => fn());
+/** Runs any backend write, then refetches what keys name (everything when left out). Success and failure both show a toast. */
+export function useAct(keys?: string[]) {
+  const w = useWrite((fn: () => Promise<unknown>) => fn(), keys);
   return (fn: () => Promise<unknown>, opts: { ok?: string; onDone?: () => void; onSettled?: () => void } = {}) =>
     w.mutate(fn, {
       onSuccess: () => { if (opts.ok) toast.success(opts.ok); opts.onDone?.(); },
