@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight, Calendar, CalendarCheck, CalendarDots, ChartLineUp, Gauge, PiggyBank, Sparkle, SquaresFour, Timer, Wallet } from "@phosphor-icons/react";
+import { ArrowDownLeft, ArrowUpRight, Calendar, CalendarCheck, CalendarDots, ChartLineUp, Gauge, PiggyBank, Sparkle, SquaresFour, Wallet } from "@phosphor-icons/react";
 import { Button } from "@/components/atoms";
 import { Card, Meter, PanelSkeleton, StatCard, StatSkeleton, Tabs } from "@/components/molecules";
-import { AccountBalances, CashflowPanel, NetWorthChart, PositionPanel, RecentActivity, SpendingHeatmap } from "@/components/organisms";
+import { AccountBalances, CashflowPanel, NetWorthChart, PositionPanel, RecentActivity, RunwayPanel, SpendingHeatmap } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { type PeriodKey, fetchAdvice, useAccounts, useBudgets, useDashboard } from "@/lib/api";
 import { inr } from "@/lib/money";
@@ -104,7 +104,8 @@ export default function Dashboard() {
       </Section>
 
       <Section n="04" title="Upcoming commitments">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+        <RunwayPanel className="mb-4" cashPaise={p.cashPaise} worthPaise={p.netWorthPaise} burnPaise={u.stopBurnPaise} netPaise={u.monthlyNetPaise} />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <StatCard label="Next Salary" icon={CalendarCheck} href="/profile" tone={u.salaryPaise > 0 ? "good" : "neutral"} value={u.salaryPaise > 0 ? `${u.daysToSalary} days` : "–"}
             sub={u.salaryPaise > 0 ? `${inr(u.salaryPaise)} expected on the ${u.salaryDay}th. Change in About Me` : "Set salary in About Me"} />
           <StatCard label="SIPs" icon={ChartLineUp} href="/funds" tone={u.nextSip && u.nextSip.days <= 3 ? "warn" : "info"} value={u.sipMonthlyPaise > 0 ? `${inr(u.sipMonthlyPaise)} / mo` : "–"}
@@ -115,8 +116,6 @@ export default function Dashboard() {
           </StatCard>
           <StatCard label="Mandates · 90 days" icon={CalendarDots} href="/mandates" tone={d.mandates.due.length ? "warn" : "neutral"} value={d.mandates.due.length ? inr(d.mandates.next90Paise) : "–"}
             sub={d.mandates.due.length ? `${d.mandates.due.slice(0, 3).map((o) => `${o.name} in ${o.days}d`).join(" · ")}${d.mandates.due.length > 3 ? ` · +${d.mandates.due.length - 3} more` : ""}` : "Add insurance, fees and other must-pay items"} />
-          <StatCard label="Runway" icon={Timer} tone={u.runwayTone} value={u.runwayDays === undefined ? "Sustainable" : `~${u.runwayDays} days`}
-            sub={u.runwayDays === undefined ? `Income covers outgoings (${inr(u.monthlyNetPaise)} / month net)` : `${inr(p.cashPaise)} cash ÷ ${inr(u.monthlyBurnPaise)} net burn a month`} />
           <StatCard label="Today's Budget" icon={Gauge} tone={u.dailyTone} value={u.dailyTargetPaise > 0 ? inr(u.dailyTargetPaise) : "–"}
             sub={u.dailyTargetPaise > 0 ? `Spent ${inr(u.todaySpentPaise)} today. (Cash − buffer − EMIs and SIPs due) ÷ ${u.daysToSalary} days to salary` : "Set salary and buffer in About Me"}>
             {u.dailyTargetPaise > 0 && <Meter ratio={u.todaySpentPaise / u.dailyTargetPaise} tone={u.dailyTone} />}
@@ -124,7 +123,7 @@ export default function Dashboard() {
         </div>
       </Section>
 
-      <Section n="05" title="Activity">
+      <Section n="05" title="Financial pulse">
         <div className="grid gap-4 xl:grid-cols-3">
           <RecentActivity txns={d.recent} className="xl:col-span-2" />
           <AccountBalances accounts={A} />

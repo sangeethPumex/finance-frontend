@@ -192,6 +192,7 @@ export type Dashboard = {
     emiMonthlyPaise: number; emiOutstandingPaise: number; emiActive: number; emiShare: number; emiTone: Tone; nextEmi?: Next;
     sipMonthlyPaise: number; nextSip?: Next;
     monthlyNetPaise: number; monthlyBurnPaise: number; runwayDays?: number; runwayTone: Tone;
+    stopBurnPaise: number; runwayCashDays?: number; runwayWorthDays?: number;
     dailyTargetPaise: number; todaySpentPaise: number; dailyTone: Tone; committedDuePaise: number;
     bufferTargetPaise: number; bufferRatio?: number; bufferTone: Tone; avgDailySpendPaise: number;
   };

@@ -25,6 +25,8 @@
   --color-gain-bg: #eaf6ef;
   --color-loss: #d64545;     /* outgoing, loss, danger */
   --color-loss-bg: #fcefed;
+  --color-up: #0a9d47;       /* plain money-in green, no tint */
+  --color-down: #e11d2e;     /* plain money-out red, no tint */
   --color-warn: #c98a12;     /* approaching a limit */
   --color-warn-bg: #fdf5e3;
   --color-info: #3b6fd4;     /* investments, SIPs, neutral highlights */
