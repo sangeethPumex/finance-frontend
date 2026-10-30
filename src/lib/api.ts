@@ -332,3 +332,22 @@ export function useAct(keys?: string[]) {
       onError: (e) => toast.error(e instanceof Error ? e.message : "Something went wrong"),
     });
 }
+
+export type AllocSlice = { class: "equity" | "debt" | "gold" | "cash"; value: number; pct: number; target?: number; drift?: number; shift?: number };
+export type Target = { equity: number; debt: number; gold: number; cash: number };
+export type Return = { key: string; name: string; rate?: number; exact: boolean };
+export type SipCheck = { name: string; amount: number; day: number; state: "ok" | "due" | "missed" | "paused"; lastLogged?: string; stepUp: "up" | "none" | "new" | ""; stepUpPct?: number };
+export type PortfolioOverview = {
+  allocation: { total: number; slices: AllocSlice[] };
+  target?: Target;
+  returns: { portfolio?: number; funds: Return[]; stocks: Return[] };
+  sips: SipCheck[];
+};
+export const usePortfolio = () => useQuery({ queryKey: ["portfolio"], queryFn: () => api<PortfolioOverview>("/portfolio") });
+
+export type IncomeEntry = { id: string; date: string; kind: "dividend" | "interest"; source: string; amount: number };
+export type Income = { fy: string; dividend: number; interest: number; lastFy: number; months: { ym: string; dividend: number; interest: number }[]; entries: IncomeEntry[] };
+export const useIncome = () => useQuery({ queryKey: ["income"], queryFn: () => api<Income>("/portfolio/income") });
+
+export type PriceAlert = { id: string; kind: "stock" | "fund"; ref: string; name: string; op: "above" | "below"; price: number; createdAt: string; triggeredAt?: string; triggeredPrice?: number; current?: number };
+export const useAlerts = () => useQuery({ queryKey: ["alerts"], queryFn: () => api<PriceAlert[]>("/alerts"), refetchInterval: 5 * 60_000 });

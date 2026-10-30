@@ -1,4 +1,4 @@
-import { ArrowsLeftRight, Bank, ChartLineUp, ChartPie, Calendar, CalendarDots, CreditCard, HandCoins, Lightbulb, SquaresFour, Target, UserCircle, Sparkle, Storefront, Tag, type Icon } from "@phosphor-icons/react";
+import { ArrowsLeftRight, Bank, ChartLineUp, ChartPie, ChartDonut, Calendar, CalendarDots, CreditCard, HandCoins, Lightbulb, SquaresFour, Target, UserCircle, Sparkle, Storefront, Tag, type Icon } from "@phosphor-icons/react";
 
 export type NavLink = { href: string; label: string; icon: Icon; ai?: boolean };
 export type NavGroup = { title: string; links: NavLink[] };
@@ -22,6 +22,7 @@ export const NAV_GROUPS: NavGroup[] = [
     { href: "/owed", label: "Owed to Me", icon: HandCoins },
   ] },
   { title: "Investments", links: [
+    { href: "/portfolio", label: "Portfolio", icon: ChartDonut },
     { href: "/funds", label: "Mutual Funds", icon: ChartPie },
     { href: "/stocks", label: "Stocks", icon: ChartLineUp },
   ] },
