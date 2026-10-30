@@ -8,7 +8,7 @@ import { shortDateTime } from "@/lib/dates";
 import { inr } from "@/lib/money";
 import { cn } from "@/lib/cn";
 import { isDebit, signed, sourceLabel, vendorLabel } from "@/lib/txn";
-import { Button, Select } from "../atoms";
+import { Button, CategoryLabel, Select } from "../atoms";
 import { OwedDialog } from "./owed-dialog";
 import { SplitDialog } from "./split-dialog";
 import { InlineError } from "../molecules";
@@ -56,8 +56,8 @@ function CategoryCell({ t, categories, cards, onSplit }: { t: Txn; categories: C
   const needsCard = cat?.name === CARD_PAYMENTS && isDebit(t) !== false;
   const card = cards.find((c) => c.id === t.paid_card_id);
   if (t.splits?.length) {
-    const names = t.splits.map((s) => categories.find((c) => c.id === s.category_id)?.name ?? "?").join(" + ");
-    return <button type="button" title="Edit split" onClick={onSplit} className="text-left text-muted hover:text-ink">Split: {names}</button>;
+    const parts = t.splits.map((s) => categories.find((c) => c.id === s.category_id));
+    return <button type="button" title="Edit split" onClick={onSplit} className="flex flex-wrap items-center gap-x-1.5 text-left text-muted hover:text-ink">Split: {parts.map((c, i) => <span key={i} className="inline-flex items-center gap-1.5">{i > 0 && "+"}{c ? <CategoryLabel name={c.name} icon={c.icon} /> : "?"}</span>)}</button>;
   }
   const pickCategory = !cat || editing, pickCard = needsCard && (!card || editing);
   const done = () => setEditing(false);
@@ -65,7 +65,7 @@ function CategoryCell({ t, categories, cards, onSplit }: { t: Txn; categories: C
   if (!pickCategory && !pickCard) {
     return (
       <span className="flex items-center gap-1.5 text-muted">
-        {cat?.name}{needsCard && card && <> → <span className="font-medium text-ink"><Link href={`/cards?card=${card.id}`} title="Open this card" className="underline-offset-2 hover:underline">{card.name}{card.last4 && ` ••${card.last4}`}</Link></span></>}
+        {cat && <CategoryLabel name={cat.name} icon={cat.icon} />}{needsCard && card && <> → <span className="font-medium text-ink"><Link href={`/cards?card=${card.id}`} title="Open this card" className="underline-offset-2 hover:underline">{card.name}{card.last4 && ` ••${card.last4}`}</Link></span></>}
         <button type="button" aria-label="Change category" onClick={() => setEditing(true)} className="text-muted hover:text-ink"><PencilSimple size={13} /></button>
       </span>
     );

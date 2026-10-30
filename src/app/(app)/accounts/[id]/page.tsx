@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Bank, ChartLineUp, Info, ListMagnifyingGlass, Repeat, Storefront, Tag, Warning } from "@phosphor-icons/react";
-import { BankLogo } from "@/components/atoms";
+import { BankLogo, CategoryLabel } from "@/components/atoms";
 import { BarRow, Card, EmptyState, RowSkeleton, StatCard, StatSkeleton, Tabs } from "@/components/molecules";
 import { EditAccount, TransactionsTable } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
@@ -72,7 +72,7 @@ export default function AccountPage() {
           </Card>
           <Card title="Spending by category · 30 days" icon={Tag}>
             {a.by_category.length === 0 ? <EmptyState icon={Tag}>No spending yet</EmptyState> : (
-              <div className="space-y-3.5 text-[13px]">{a.by_category.slice(0, 6).map((c) => <BarRow key={c.category_id ?? "none"} label={catName(c.category_id)} value={inr(c.paise)} ratio={spend > 0 ? c.paise / spend : 0} />)}</div>
+              <div className="space-y-3.5 text-[13px]">{a.by_category.slice(0, 6).map((c) => <BarRow key={c.category_id ?? "none"} label={<CategoryLabel name={catName(c.category_id)} icon={categories.find((x) => x.id === c.category_id)?.icon} />} value={inr(c.paise)} ratio={spend > 0 ? c.paise / spend : 0} />)}</div>
             )}
           </Card>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">

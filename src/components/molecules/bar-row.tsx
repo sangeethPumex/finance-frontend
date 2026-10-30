@@ -1,5 +1,7 @@
+import type { ReactNode } from "react";
+
 /** A label and value with a thin bar under it. ratio is 0 to 1. */
-export function BarRow({ label, value, ratio }: { label: string; value: string; ratio: number }) {
+export function BarRow({ label, value, ratio }: { label: ReactNode; value: string; ratio: number }) {
   return (
     <div>
       <div className="flex justify-between gap-3">

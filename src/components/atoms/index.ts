@@ -1,5 +1,6 @@
 export * from "./badge";
 export * from "./button";
+export * from "./category-label";
 export * from "./company-logo";
 export * from "./divider";
 export * from "./eyebrow";

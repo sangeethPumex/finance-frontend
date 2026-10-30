@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { GitMerge, Storefront, Trash } from "@phosphor-icons/react";
 import { api, NAME_KEYS, useListCache, useWrite, type Category, type Vendor } from "@/lib/api";
-import { Button } from "../atoms";
+import { Button, CategoryLabel } from "../atoms";
 import { InlineError, Tag } from "../molecules";
 import { DataTable, type Column, type DataTableProps } from "./data-table";
 import { EditDialog } from "./edit-dialog";
@@ -71,10 +71,10 @@ function MergeCell({ v, canMerge }: { v: Vendor; canMerge: boolean }) {
 export function VendorsTable({ vendors, total, categories, loading, emptyText, sort, onSort }: {
   vendors: Vendor[]; total: number; categories: Category[]; loading?: boolean; emptyText?: string; sort?: DataTableProps<Vendor>["sort"]; onSort?: (field: string) => void;
 }) {
-  const names = new Map(categories.map((c) => [c.id, c.name]));
+  const byId = new Map(categories.map((c) => [c.id, c]));
   const columns: Column<Vendor>[] = [
     { key: "name", header: "Vendor", sortKey: "name", cell: (v) => v.name },
-    { key: "category", header: "Category", cell: (v) => <span className="text-muted">{(v.category_id && names.get(v.category_id)) || "—"}</span> },
+    { key: "category", header: "Category", cell: (v) => { const c = v.category_id ? byId.get(v.category_id) : undefined; return <span className="text-muted">{c ? <CategoryLabel name={c.name} icon={c.icon} /> : "—"}</span>; } },
     { key: "aliases", header: "Aliases", cell: (v) => <AliasList v={v} /> },
     { key: "actions", header: "", align: "right", cell: (v) => <span className="flex items-center justify-end gap-1"><EditVendor v={v} categories={categories} /><MergeCell v={v} canMerge={total > 1} /><DeleteCell v={v} /></span> },
   ];

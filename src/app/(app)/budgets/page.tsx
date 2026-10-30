@@ -1,7 +1,7 @@
 "use client";
 
 import { PencilSimple, Target, Trash } from "@phosphor-icons/react";
-import { Badge, Button } from "@/components/atoms";
+import { Badge, Button, CategoryLabel } from "@/components/atoms";
 import { Card, EmptyState, Meter, RowList, RowSkeleton, StatCard, StatSkeleton } from "@/components/molecules";
 import { CreateForm, type FieldDef } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
@@ -58,7 +58,7 @@ export default function Budgets() {
             {rows.map((b) => (
               <li key={b.id} className="py-3">
                 <div className="flex items-center gap-3">
-                  <span className="min-w-0 flex-1 truncate font-medium">{name(b.category_id)}</span>
+                  <CategoryLabel className="flex-1 font-medium" name={name(b.category_id)} icon={cats.data?.find((c) => c.id === b.category_id)?.icon} />
                   {b.level !== "ok" && <Badge variant={b.level === "over" ? "bad" : "warn"}>{LABEL[b.level]}</Badge>}
                   <span className="num shrink-0 text-[13px]">{inr(b.spent_paise)} <span className="text-muted">of {inr(b.limit_paise)}</span></span>
                   <Button variant="quiet" size="icon" icon={PencilSimple} aria-label={`Change ${name(b.category_id)} limit`} onClick={() => change(b)} />
