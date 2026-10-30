@@ -13,7 +13,7 @@ export function StatCard({ label, value, icon: Icon, href, tone = "neutral", sub
         <Eyebrow>{label}</Eyebrow>
         {Icon && <span className={cn("grid size-8 place-items-center rounded-md", toneChip[tone])}><Icon size={17} weight="duotone" /></span>}
       </div>
-      <div className={cn("num mt-3 whitespace-nowrap font-mono text-[20px] font-semibold leading-none tracking-tight sm:text-[26px]", tone === "info" ? "text-ink" : toneText[tone])}>{value}</div>
+      <div className={cn("num mt-3 whitespace-nowrap text-[20px] font-semibold leading-tight sm:text-[26px]", tone === "info" ? "text-ink" : toneText[tone])}>{value}</div>
       {sub && <div className="mt-2 text-[12px] leading-snug text-muted">{sub}</div>}
       {children && <div className="mt-3">{children}</div>}
     </Card>
