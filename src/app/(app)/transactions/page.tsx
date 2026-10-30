@@ -2,8 +2,9 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowsLeftRight } from "@phosphor-icons/react";
-import { Pager, TransactionsFilters, TransactionsTable } from "@/components/organisms";
+import { ArrowsLeftRight, Plus } from "@phosphor-icons/react";
+import { Button } from "@/components/atoms";
+import { AddTransactionDialog, Pager, TransactionsFilters, TransactionsTable } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { type Sort, type TxnFilter, useAccounts, useCards, useCategories, useTransactionsPage } from "@/lib/api";
 
@@ -16,6 +17,7 @@ function Transactions() {
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(50);
   const [sort, setSort] = useState<Sort | undefined>();
+  const [adding, setAdding] = useState(false);
   const setFilter = (f: TxnFilter) => { setFilterState(f); setPage(1); };
   // Click a column: ascending, then descending, then back to newest first.
   const toggleSort = (field: string) => { setSort((o) => (o?.field !== field ? { field, dir: "asc" } : o.dir === "asc" ? { field, dir: "desc" } : undefined)); setPage(1); };
@@ -30,8 +32,9 @@ function Transactions() {
       title="Transactions"
       icon={ArrowsLeftRight}
       error={txns.error}
+      action={<Button icon={Plus} onClick={() => setAdding(true)}>Add transaction</Button>}
     >
-      <TransactionsFilters value={filter} onChange={setFilter} accounts={accounts.data ?? []} categories={cats.data ?? []} />
+      <TransactionsFilters value={filter} onChange={setFilter} accounts={accounts.data ?? []} cards={cards.data ?? []} categories={cats.data ?? []} />
       <TransactionsTable
         txns={items}
         accounts={accounts.data ?? []}
@@ -43,6 +46,7 @@ function Transactions() {
         emptyText={searching ? "No transactions match these filters" : "No transactions yet"}
       />
       <Pager page={page} pages={pages} total={total} limit={size} onPage={setPage} onLimit={(n) => { setSize(n); setPage(1); }} sizes={SIZES} />
+      {adding && <AddTransactionDialog onClose={() => setAdding(false)} />}
     </PageLayout>
   );
 }

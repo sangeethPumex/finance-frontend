@@ -7,6 +7,7 @@ export type Account = {
 };
 
 export type CardKind = "credit" | "paylater";
+export type CardNetwork = "visa" | "mastercard" | "rupay" | "amex" | "diners";
 export type LinkedEmi = { id: string; name: string; monthly: number; left: number; active: boolean };
 /** The account page: balance, this month's flow, a 30-day balance line, top payees, spending by category and the SIPs that debit it. Paise, except SIP amounts (rupees). */
 export type AccountDetail = Account & {
@@ -18,7 +19,7 @@ export type AccountDetail = Account & {
 };
 /** A credit card or pay-later line. Money is paise; days are of the month (0 or absent when unknown). */
 export type Card = {
-  id: string; name: string; kind: CardKind; bank?: string; last4?: string;
+  id: string; name: string; kind: CardKind; bank?: string; last4?: string; network?: CardNetwork;
   limit_paise?: number; billing_day?: number; due_day?: number; outstanding_paise?: number;
   /** Set when this card draws on another card's limit. limit_paise, available and utilisation are then the group's; used_paise stays this card's own. */
   shared_with?: string; shared_with_name?: string; shared_cards: string[]; group_used_paise?: number;
@@ -33,17 +34,19 @@ export type Card = {
 export type Statement = {
   from: string; to: string; billed_paise: number; paid_paise: number; unpaid_paise: number; min_due_paise: number;
   due_date: string; days_to_due: number; overdue: boolean; remind: boolean; apr: number;
+  /** no_due: nothing billed. partial: some paid. overdue: unpaid past the due date. */
+  status: "no_due" | "paid" | "partial" | "unpaid" | "overdue";
   interest_if_min_paise: number; interest_if_skipped_paise: number;
 };
-export type CardInput = { name: string; kind: CardKind; bank?: string; last4?: string; limit_paise?: number; billing_day?: number; due_day?: number; apr?: number; outstanding_paise?: number; shared_with?: string };
-export type Category = { id: string; name: string };
+export type CardInput = { name: string; kind: CardKind; bank?: string; last4?: string; network?: CardNetwork | ""; limit_paise?: number; billing_day?: number; due_day?: number; apr?: number; outstanding_paise?: number; shared_with?: string };
+export type Category = { id: string; name: string; icon?: string };
 export type Vendor = { id: string; name: string; category_id?: string; aliases: string[] };
 export type Txn = {
   id: string; type: string; amount_paise: number; occurred_at: string; received_at?: string; direction?: "debit" | "credit";
   bank?: string; account_last4?: string; account_id?: string; card_id?: string;
   /** The credit card this payment settled (category "Credit card payments"). */
   paid_card_id?: string;
-  raw_vendor?: string; upi_id?: string; vendor_id?: string; category_id?: string;
+  raw_vendor?: string; upi_id?: string; vendor_id?: string; category_id?: string; note?: string; model?: string;
   /** Paid for someone else: how much of this payment they owe back, and how much has come back. Not counted as the user's spend. */
   owed_from?: string; owed_paise?: number; repaid_paise?: number;
   /** One payment spread over several categories; the parts add up to amount_paise. */
@@ -79,8 +82,11 @@ export async function api<T>(path: string, init?: { method?: string; body?: unkn
 const list = <T,>(key: string, path = `/${key}`) => () => useQuery({ queryKey: [key], queryFn: () => api<T[]>(path) });
 
 export const useAccounts = list<Account>("accounts");
-/** A bill payment linked to a card (a transaction in "Credit card payments"), as it is in transactions. */
-export type CardPayment = { txn_id: string; at: string; amount_paise: number; account_id?: string; bank?: string; account_last4?: string; payee?: string };
+/** A bill payment for a card: a linked bank transaction (a transaction in "Credit card payments") or one recorded by hand, which can be removed. */
+export type CardPayment = { id: string; source: "transaction" | "manual"; note?: string; txn_id?: string; at: string; amount_paise: number; account_id?: string; bank?: string; account_last4?: string; payee?: string };
+/** One line of a card's history. imported: read from a card statement instead of an SMS. */
+export type CardActivity = { id: string; at: string; amount_paise: number; kind: "purchase" | "refund" | "payment"; vendor: string; source?: string; category?: string; imported?: boolean; needs_review?: boolean };
+export const useCardActivity = (id: string, limit = 8) => useQuery({ queryKey: ["cards", "activity", id, limit], queryFn: () => api<CardActivity[]>(`/cards/${id}/activity?limit=${limit}`) });
 export const useCardPayments = (id: string) => useQuery({ queryKey: ["cards", "payments", id], queryFn: () => api<CardPayment[]>(`/cards/${id}/payments`) });
 export const useCards = list<Card>("cards");
 export const useAccount = (id: string) => useQuery({ queryKey: ["account", id], queryFn: () => api<AccountDetail>(`/accounts/${id}`) });
@@ -122,7 +128,7 @@ export const usePatterns = () => useQuery({ queryKey: ["patterns"], queryFn: () 
 
 export const useSummary = () => useQuery({ queryKey: ["summary"], queryFn: () => api<Summary>("/summary") });
 /** Narrows the transaction list; blanks are ignored. Dates are YYYY-MM-DD, min and max are rupees. */
-export type TxnFilter = Partial<Record<"q" | "category_id" | "account_id" | "direction" | "from" | "to" | "min" | "max" | "status", string> & { needs_review: boolean; owed: boolean }>;
+export type TxnFilter = Partial<Record<"q" | "category_id" | "account_id" | "card_id" | "direction" | "from" | "to" | "min" | "max" | "status", string> & { needs_review: boolean; owed: boolean }>;
 export const useTransactions = (f: TxnFilter = {}, limit = 100) =>
   useQuery({
     queryKey: ["transactions", f, limit],

@@ -12,10 +12,10 @@ const KINDS: { kind: CardKind; label: string; hint: string; icon: typeof CreditC
   { kind: "paylater", label: "Pay later", hint: "Amazon Pay Later, Simpl and similar", icon: HandCoins, placeholder: "Amazon Pay Later" },
 ];
 
-type Draft = { name: string; bank: string; last4: string; limit: string; billingDay: string; dueDay: string; apr: string; outstanding: string; sharedWith: string };
+type Draft = { name: string; bank: string; last4: string; network: string; limit: string; billingDay: string; dueDay: string; apr: string; outstanding: string; sharedWith: string };
 const rupees = (paise?: number) => (paise ? String(paise / 100) : "");
 const toDraft = (c?: Card): Draft => ({
-  name: c?.name ?? "", bank: c?.bank ?? "", last4: c?.last4 ?? "", limit: rupees(c?.limit_paise),
+  name: c?.name ?? "", bank: c?.bank ?? "", last4: c?.last4 ?? "", network: c?.network ?? "", limit: rupees(c?.limit_paise),
   billingDay: c?.billing_day ? String(c.billing_day) : "", dueDay: c?.due_day ? String(c.due_day) : "",
   apr: c?.apr ? String(c.apr) : "",
   outstanding: c?.outstanding_paise !== undefined ? String(c.outstanding_paise / 100) : "", sharedWith: c?.shared_with ?? "",
@@ -40,7 +40,7 @@ export function CardForm({ initial, onSave, onClose, pending }: { initial?: Card
   const spec = KINDS.find((k) => k.kind === kind)!;
 
   const build = (): CardInput => ({
-    name: d.name.trim(), kind, bank: d.bank.trim(), last4: d.last4, limit_paise: sharing ? 0 : Math.round(limit * 100), shared_with: sharing ? d.sharedWith : initial ? "" : undefined, billing_day: day(d.billingDay), due_day: day(d.dueDay), apr,
+    name: d.name.trim(), kind, bank: d.bank.trim(), last4: d.last4, network: d.network as CardInput["network"], limit_paise: sharing ? 0 : Math.round(limit * 100), shared_with: sharing ? d.sharedWith : initial ? "" : undefined, billing_day: day(d.billingDay), due_day: day(d.dueDay), apr,
     // editing: a blank clears the manual figure (negative); adding: simply leave it out
     outstanding_paise: outstanding === undefined ? (initial ? -1 : undefined) : Math.round(outstanding * 100),
   });
@@ -62,6 +62,9 @@ export function CardForm({ initial, onSave, onClose, pending }: { initial?: Card
           <FormField label="Name" icon={Tag} className="col-span-2"><Input value={d.name} onChange={set("name")} placeholder={spec.placeholder} autoFocus={!initial} /></FormField>
           <FormField label="Bank" icon={Bank} hint="Optional"><Input value={d.bank} onChange={set("bank")} placeholder="HDFC" /></FormField>
           <FormField label="Last 4 digits" icon={Hash} hint="Links your SMS to this card"><Input value={d.last4} onChange={set("last4")} inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder="1234" /></FormField>
+          <FormField label="Card network" icon={CreditCard} hint="Shown on the card" className="col-span-2">
+            <Select value={d.network} onChange={set("network")}><option value="">Not set</option><option value="visa">Visa</option><option value="mastercard">Mastercard</option><option value="rupay">RuPay</option><option value="amex">American Express</option><option value="diners">Diners Club</option></Select>
+          </FormField>
         </div>
 
         <div>

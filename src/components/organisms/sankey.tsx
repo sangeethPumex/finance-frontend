@@ -4,7 +4,7 @@ import type { Flow, FlowTone } from "@/lib/api";
 import { inr } from "@/lib/money";
 
 export const TONE_COLOR: Record<FlowTone, string> = {
-  income: "#1f8a5b", spend: "#1c1c1b", discretionary: "#c98a12", invest: "#3b6fd4", gap: "#d64545", net: "#a9a7a1", card: "#7c3aed",
+  income: "#1f8a5b", spend: "#c62828", discretionary: "#ef7b7b", invest: "#3b6fd4", gap: "#c98a12", net: "#0e9aa7", card: "#7c3aed",
 };
 
 const MEMO_H = 46;
@@ -46,7 +46,7 @@ export function Sankey({ sources, dests, income, selected, onSelect, memo }: { s
         const mid = (x0 + x1) / 2;
         return (
           <path key={i} d={`M${x0},${y0} C${mid},${y0} ${mid},${y1} ${x1},${y1}`} fill="none" stroke={TONE_COLOR[n.flow.tone]} strokeWidth={Math.max(h, 1)}
-            opacity={selected && selected !== n.flow.id ? 0.08 : 0.25} {...clickable(n.flow)}>
+            opacity={!selected ? 0.3 : selected === n.flow.id ? 0.65 : 0.06} {...clickable(n.flow)}>
             <title>{`${a} → ${b}: ${inr(n.flow.paise)}`}</title>
           </path>
         );
@@ -55,7 +55,7 @@ export function Sankey({ sources, dests, income, selected, onSelect, memo }: { s
       <text x={MX + NODE / 2} y={poolY - 8} textAnchor="middle" fontSize="11" fill="#737373">Available money · {inr(total)}</text>
       {left.map(({ flow, y, h }) => (
         <g key={flow.id} {...clickable(flow)}>
-          <rect x={LX} y={y} width={NODE} height={h} fill={TONE_COLOR[flow.tone]} />
+          <rect x={LX} y={y} width={NODE} height={h} fill={TONE_COLOR[flow.tone]} opacity={selected && selected !== flow.id ? 0.3 : 1} />
           <text x={LX - 8} y={y + h / 2 - 2} textAnchor="end" fontSize="11" fill="#1c1c1b">{clip(flow.name)}</text>
           <text x={LX - 8} y={y + h / 2 + 11} textAnchor="end" fontSize="10" fill="#737373">{inr(flow.paise)}</text>
           <title>{`${flow.name}: ${inr(flow.paise)}`}</title>
@@ -63,7 +63,7 @@ export function Sankey({ sources, dests, income, selected, onSelect, memo }: { s
       ))}
       {right.map(({ flow, y, h }) => (
         <g key={flow.id} {...clickable(flow)}>
-          <rect x={RX} y={y} width={NODE} height={h} fill={TONE_COLOR[flow.tone]} />
+          <rect x={RX} y={y} width={NODE} height={h} fill={TONE_COLOR[flow.tone]} opacity={selected && selected !== flow.id ? 0.3 : 1} />
           <text x={RX + NODE + 8} y={y + h / 2 - 2} fontSize="11" fill="#1c1c1b" fontWeight={selected === flow.id ? 600 : 400}>{clip(flow.name)}</text>
           <text x={RX + NODE + 8} y={y + h / 2 + 11} fontSize="10" fill="#737373">{inr(flow.paise)}{income > 0 ? ` · ${Math.round((flow.paise / income) * 100)}%` : ""}</text>
           <title>{`${flow.name}: ${inr(flow.paise)}`}</title>

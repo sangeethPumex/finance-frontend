@@ -9,8 +9,44 @@ import { inr } from "@/lib/money";
 import { AreaChart, Card, EmptyState, Tabs } from "../molecules";
 import { Sankey, TONE_COLOR } from "./sankey";
 
-type View = "flow" | "trend" | "categories";
-const VIEWS: { value: View; label: string }[] = [{ value: "flow", label: "Money flow" }, { value: "trend", label: "Spending trend" }, { value: "categories", label: "Categories" }];
+const R = 80, C = 100;
+/** Donut of where the money went; slices and legend rows are both clickable. */
+function Pie({ flows, selected, onSelect }: { flows: Flow[]; selected?: string; onSelect: (f: Flow) => void }) {
+  const total = flows.reduce((t, f) => t + f.paise, 0);
+  if (total <= 0) return null;
+  let a = -Math.PI / 2;
+  const pt = (t: number) => `${C + R * Math.cos(t)},${C + R * Math.sin(t)}`;
+  return (
+    <div className="flex flex-col items-center gap-6 sm:flex-row">
+      <svg viewBox="0 0 200 200" role="img" aria-label="Share of each destination" className="size-56 shrink-0">
+        {flows.map((f) => {
+          const sweep = Math.min((f.paise / total) * 2 * Math.PI, 2 * Math.PI - 0.001), s = a;
+          a += sweep;
+          return (
+            <path key={f.id} d={`M${pt(s)} A${R},${R} 0 ${sweep > Math.PI ? 1 : 0} 1 ${pt(s + sweep)}`} fill="none" stroke={TONE_COLOR[f.tone]} strokeWidth={selected === f.id ? 36 : 28}
+              opacity={selected && selected !== f.id ? 0.35 : 1} style={{ cursor: "pointer" }} onClick={() => onSelect(f)}><title>{`${f.name}: ${inr(f.paise)}`}</title></path>
+          );
+        })}
+        <text x={C} y={C - 2} textAnchor="middle" fontSize="11" fill="#737373">Total</text>
+        <text x={C} y={C + 14} textAnchor="middle" fontSize="13" fill="#1c1c1b">{inr(total)}</text>
+      </svg>
+      <ul className="w-full min-w-0 flex-1 space-y-1 text-[13px]">
+        {flows.map((f) => (
+          <li key={f.id}>
+            <button type="button" onClick={() => onSelect(f)} className={`flex w-full items-center gap-2 py-0.5 text-left ${selected && selected !== f.id ? "opacity-50" : ""}`}>
+              <span className="size-2 shrink-0" style={{ background: TONE_COLOR[f.tone] }} />
+              <span className="min-w-0 flex-1 truncate">{f.name}</span>
+              <span className="num text-muted">{inr(f.paise)} · {pct(f.paise, total)}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+type View = "flow" | "pie" | "trend" | "categories";
+const VIEWS: { value: View; label: string }[] = [{ value: "flow", label: "Money flow" }, { value: "pie", label: "Share" },{ value: "trend", label: "Spending trend" }, { value: "categories", label: "Categories" }];
 
 type Props = { cashflow: Dashboard["cashflow"]; loading: boolean };
 
@@ -34,6 +70,8 @@ export function CashflowPanel({ cashflow: data, loading }: Props) {
           <EmptyState icon={ChartBar}>No income or spending in this period yet. Pick another period, or wait for new bank messages to arrive.</EmptyState>
         ) : view === "flow" ? (
           <Sankey sources={data.sources} dests={data.dests} income={data.incomePaise} selected={sel?.id} onSelect={setSel} memo={data.cardPayments} />
+        ) : view === "pie" ? (
+          <Pie flows={data.dests} selected={sel?.id} onSelect={setSel} />
         ) : view === "trend" ? (
           <>
             <AreaChart label="Daily spending" values={data.daily.map((d) => d.paise)} color="var(--color-ink)" />

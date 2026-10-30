@@ -1,7 +1,10 @@
 export * from "./accounts-table";
+export * from "./add-transaction-dialog";
+export * from "./card-face";
 export * from "./card-form";
 export * from "./card-tile";
 export * from "./categories-table";
+export * from "./category-icon-picker";
 export * from "./create-form";
 export * from "./dashboard-panels";
 export * from "./data-table";
@@ -37,3 +40,4 @@ export * from "./rebalance-dialog";
 export * from "./genius-sip-dialog";
 export * from "./position-panel";
 export * from "./runway-panel";
+export * from "./record-payment-dialog";

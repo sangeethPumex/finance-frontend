@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BookmarkSimple, MagnifyingGlass, X } from "@phosphor-icons/react";
-import { api, useAct, useViews, type Account, type Category, type TxnFilter } from "@/lib/api";
+import { api, useAct, useViews, type Account, type Card, type Category, type TxnFilter } from "@/lib/api";
 import { Button, Input, Select } from "../atoms";
 import { Tag } from "../molecules";
 
@@ -11,7 +11,7 @@ const toFilter = (f: Record<string, string>) => ({ ...f, owed: f.owed === "true"
 const toStored = (f: TxnFilter) => Object.fromEntries(Object.entries(f).filter(([, v]) => v).map(([k, v]) => [k, String(v)]));
 
 /** Search box, filters and saved views. The parent owns the filter and fetches; this only edits it. */
-export function TransactionsFilters({ value, onChange, accounts, categories }: { value: TxnFilter; onChange: (f: TxnFilter) => void; accounts: Account[]; categories: Category[] }) {
+export function TransactionsFilters({ value, onChange, accounts, cards = [], categories }: { value: TxnFilter; onChange: (f: TxnFilter) => void; accounts: Account[]; cards?: Card[]; categories: Category[] }) {
   const act = useAct();
   const views = useViews().data ?? [];
   const [text, setText] = useState(value.q ?? "");
@@ -40,7 +40,12 @@ export function TransactionsFilters({ value, onChange, accounts, categories }: {
         </div>
         <Select aria-label="Show" value={value.status ?? ""} onChange={set("status")}><option value="">All transactions</option><option value="attention">New or uncategorised</option><option value="review">New (needs review)</option><option value="uncategorised">Uncategorised</option></Select>
         <Select aria-label="Category" value={value.category_id ?? ""} onChange={set("category_id")}><option value="">All categories</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</Select>
-        <Select aria-label="Account" value={value.account_id ?? ""} onChange={set("account_id")}><option value="">All accounts</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select>
+        <Select aria-label="Account or card" value={value.account_id ? `a:${value.account_id}` : value.card_id ? `c:${value.card_id}` : ""}
+          onChange={(e) => { const [k, id] = [e.target.value[0], e.target.value.slice(2)]; onChange({ ...value, account_id: k === "a" ? id : undefined, card_id: k === "c" ? id : undefined }); }}>
+          <option value="">All accounts and cards</option>
+          <optgroup label="Accounts">{accounts.map((a) => <option key={a.id} value={`a:${a.id}`}>{a.name}</option>)}</optgroup>
+          {cards.length > 0 && <optgroup label="Cards">{cards.map((c) => <option key={c.id} value={`c:${c.id}`}>{c.name}{c.last4 && ` ••${c.last4}`}</option>)}</optgroup>}
+        </Select>
         <Select aria-label="Direction" value={value.direction ?? ""} onChange={set("direction")}><option value="">In and out</option><option value="debit">Money out</option><option value="credit">Money in</option></Select>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted">
