@@ -2,8 +2,8 @@
 
 /* Catalyst design system: warm greys, charcoal ink, soft green/amber/red accents. White surfaces sit on a warm canvas. */
 @theme inline {
-  --font-sans: var(--font-dm-sans), sans-serif;
-  --font-mono: var(--font-dm-mono), monospace;
+  --font-sans: "DM Sans", sans-serif;
+  --font-mono: "DM Mono", monospace;
 }
 
 @theme {
