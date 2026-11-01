@@ -358,3 +358,11 @@ export const useIncome = () => useQuery({ queryKey: ["income"], queryFn: () => a
 
 export type PriceAlert = { id: string; kind: "stock" | "fund"; ref: string; name: string; op: "above" | "below"; price: number; createdAt: string; triggeredAt?: string; triggeredPrice?: number; current?: number };
 export const useAlerts = () => useQuery({ queryKey: ["alerts"], queryFn: () => api<PriceAlert[]>("/alerts"), refetchInterval: 5 * 60_000 });
+
+// ---- Brain Jogger: shopping lists and reminders ----
+export type JoggerKind = "shopping" | "reminder";
+export type JoggerItem = { id: string; name: string; est_paise: number; bought: boolean };
+export type JoggerList = { id: string; title: string; kind: JoggerKind; note?: string; remind_at: string; lead_mins: number[]; items: JoggerItem[]; created_at: string };
+/** Body of a create or update; remind_at is an ISO timestamp. Items without an id are new. */
+export type JoggerInput = { title: string; kind: JoggerKind; note?: string; remind_at: string; lead_mins: number[]; items: { id?: string; name: string; est_paise: number; bought?: boolean }[] };
+export const useJogger = () => useQuery({ queryKey: ["jogger"], queryFn: () => api<JoggerList[]>("/jogger"), refetchInterval: 60_000 });
