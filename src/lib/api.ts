@@ -286,10 +286,18 @@ export type Mandate = Required<Pick<MandateInput, "name" | "amount_paise" | "fre
   id: string; account_id?: string; category_id?: string;
   /** The next date it falls due from today; absent for a one-off that has passed. */
   next?: string; days: number; set_aside_paise: number;
+  /** Payment check for the latest due date that has arrived; absent when none is recent. txn_id is the matching or linked transaction. */
+  last_due?: string; status?: "paid" | "unpaid"; txn_id?: string;
 };
 export type MandateOcc = { id: string; name: string; paise: number; date: string; days: number };
 export type MandatePlan = { items: Mandate[]; calendar: MandateOcc[]; next30_paise: number; next90_paise: number; year_paise: number; set_aside_paise: number };
 export type MandateSuggestion = Omit<MandateInput, "account_id" | "category_id"> & { count: number };
+/** Parses every message still waiting or failed, one request each; stops at the first failure and throws the backend's raw error. Returns how many parsed. */
+export async function parseUnparsed() {
+  const ids = await api<string[]>("/raw-transactions/unparsed");
+  for (const id of ids) await api(`/raw-transactions/${id}/parse`, { method: "POST" });
+  return ids.length;
+}
 export const useMandates = () => useQuery({ queryKey: ["mandates"], queryFn: () => api<MandatePlan>("/mandates") });
 export const useMandateSuggestions = () => useQuery({ queryKey: ["mandate-suggestions"], queryFn: () => api<MandateSuggestion[]>("/mandates/suggestions") });
 

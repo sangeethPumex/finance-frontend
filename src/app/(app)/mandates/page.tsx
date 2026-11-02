@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowsClockwise, CalendarBlank, CalendarCheck, CalendarDots, CaretDown, Flag, PencilSimple, Plus, Sparkle, Trash, type Icon } from "@phosphor-icons/react";
+import { ArrowsClockwise, CalendarBlank, CalendarCheck, CalendarDots, CaretDown, Flag, LinkSimple, PencilSimple, Plus, Sparkle, Trash, type Icon } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { Badge, Button } from "@/components/atoms";
 import { Card, EmptyState, ListRow, RowList, RowSkeleton, StatCard, StatSkeleton } from "@/components/molecules";
-import { FREQUENCIES, MandateForm, useDialogs } from "@/components/organisms";
+import { FREQUENCIES, MandateForm, MandatePayDialog, useDialogs } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { api, type Mandate, type MandateInput, type MandateOcc, useAct, useMandateSuggestions, useMandates } from "@/lib/api";
 import { inr } from "@/lib/money";
@@ -71,6 +71,8 @@ export default function Mandates() {
   const act = useAct();
   // undefined = closed; otherwise the mandate being edited, or the starting values of a new one
   const [form, setForm] = useState<{ editing?: string; initial?: Partial<MandateInput> } | undefined>(undefined);
+  // the mandate and due date whose payment is being linked to a transaction
+  const [pay, setPay] = useState<{ id: string; name: string; due: string } | undefined>(undefined);
   const p = q.data;
 
   const save = (m: MandateInput) =>
@@ -115,6 +117,9 @@ export default function Mandates() {
                   subtitle={<>{freqLabel(m.frequency)} · {m.next ? `next ${when(m.next)}, ${inDays(m.days)}` : "date has passed"}{m.frequency !== "monthly" && m.set_aside_paise > 0 && <> · set aside {inr(m.set_aside_paise)} / month</>}</>}
                   trailing={
                     <span className="flex items-center gap-2">
+                      {m.status === "paid" && <Badge variant="good" title={`Paid for ${m.last_due}`}>Paid</Badge>}
+                      {m.status === "unpaid" && <Badge variant="bad" title={`No payment of ${inr(m.amount_paise)} found for ${m.last_due}`}>Not paid · {when(m.last_due!)}</Badge>}
+                      {m.last_due && <Button size="icon" variant="quiet" icon={LinkSimple} aria-label={`Link a payment to ${m.name}`} onClick={() => setPay({ id: m.id, name: m.name, due: m.last_due! })} />}
                       {!m.next && <Badge variant="warn">Passed</Badge>}{m.next && m.days <= 7 && <Badge variant="warn">{inDays(m.days)}</Badge>}{inr(m.amount_paise)}
                       <Button size="icon" variant="quiet" icon={PencilSimple} aria-label={`Edit ${m.name}`} onClick={() => edit(m)} />
                       <Button size="icon" variant="quiet" icon={Trash} aria-label={`Delete ${m.name}`} onClick={async () => (await dialogs.confirm({ title: "Delete mandate?", message: `${m.name} will be deleted.`, confirmLabel: "Delete", tone: "danger" })) && act(() => api(`/mandates/${m.id}`, { method: "DELETE" }), { ok: "Mandate deleted" })} />
@@ -128,6 +133,8 @@ export default function Mandates() {
 
       {p && p.calendar.length > 0 && <div className="mt-6"><h2 className="mb-3 text-[13px] font-semibold tracking-tight">Next 12 months</h2><Calendar occ={p.calendar} /></div>}
 
+      {pay && <MandatePayDialog name={pay.name} due={pay.due} onClose={() => setPay(undefined)}
+        onPick={(transaction_id) => act(() => api(`/mandates/${pay.id}/paid`, { method: "POST", body: { due: pay.due, transaction_id } }), { ok: "Payment linked", onDone: () => setPay(undefined) })} />}
       {form && <MandateForm key={form.editing ?? "new"} initial={form.initial} editing={!!form.editing} onSave={save} onClose={() => setForm(undefined)} />}
     </PageLayout>
   );

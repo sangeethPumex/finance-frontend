@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, CaretRight, MagnifyingGlass, SidebarSimple } from "@phosphor-icons/react";
-import { useNudges } from "@/lib/api";
+import { ArrowsClockwise, Bell, CaretRight, MagnifyingGlass, SidebarSimple } from "@phosphor-icons/react";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { parseUnparsed, useNudges } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import type { NavGroup } from "@/lib/nav";
 
@@ -13,6 +15,15 @@ export function AppHeader({ groups, collapsed, onToggle }: { groups: NavGroup[];
   const path = usePathname(), router = useRouter();
   const [q, setQ] = useState(""), [open, setOpen] = useState(false), [at, setAt] = useState(0);
   const box = useRef<HTMLInputElement>(null);
+  const qc = useQueryClient();
+  const [parsing, setParsing] = useState(false);
+  const parse = () => {
+    setParsing(true);
+    parseUnparsed()
+      .then((n) => { toast.success(n ? `Parsed ${n} message${n === 1 ? "" : "s"}` : "Nothing waiting to parse"); void qc.invalidateQueries(); })
+      .catch((e) => toast.error(e instanceof Error ? e.message : String(e)))
+      .finally(() => setParsing(false));
+  };
   const unread = useNudges().data?.active.length ?? 0;
 
   const all = groups.flatMap((g) => g.links.map((l) => ({ ...l, group: g.title })));
@@ -80,6 +91,10 @@ export function AppHeader({ groups, collapsed, onToggle }: { groups: NavGroup[];
           </ul>
         )}
       </div>
+
+      <button type="button" onClick={parse} disabled={parsing} aria-label="Parse waiting messages" title="Parse waiting messages" className="grid size-9 shrink-0 place-items-center border border-line bg-surface text-muted transition-colors hover:text-ink disabled:opacity-50">
+        <ArrowsClockwise size={16} className={cn(parsing && "animate-spin")} />
+      </button>
 
       <Link href="/copilot" aria-label={unread ? `Inbox, ${unread} waiting` : "Inbox"} className="relative grid size-9 shrink-0 place-items-center border border-line bg-surface text-muted transition-colors hover:text-ink">
         <Bell size={16} />

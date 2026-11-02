@@ -45,3 +45,4 @@ export * from "./record-payment-dialog";
 export * from "./jogger-form";
 export * from "./push-card";
 export * from "./copilot-panels";
+export * from "./mandate-pay-dialog";
