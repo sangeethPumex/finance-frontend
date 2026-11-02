@@ -8,7 +8,7 @@ import { cn } from "@/lib/cn";
 import { shortDate } from "@/lib/dates";
 import { inr, rupeesToPaise } from "@/lib/money";
 import { Badge, type BadgeVariant, Button, Input } from "../atoms";
-import { Card, EmptyState, FormField, ListRow, Meter, RowList, SectionTitle, toneText } from "../molecules";
+import { Card, EmptyState, FormField, ListRow, Meter, RowList, SectionTitle, Tabs, toneText } from "../molecules";
 
 const COPILOT_KEYS = ["copilot", "copilot-nudges", "copilot-wants"];
 const days = (d: number) => `${d.toFixed(d < 10 ? 1 : 0)} day${d === 1 ? "" : "s"}`;
@@ -45,23 +45,35 @@ export function NudgeRow({ n, compact }: { n: Nudge; compact?: boolean }) {
 /** The top of the dashboard: the one number, how today is going, and the one thing worth saying now. */
 export function NowCard({ o, className }: { o: CopilotOverview; className?: string }) {
   const { safe: s, runway: r, confidence: c } = o;
+  const act = useAct(COPILOT_KEYS);
+  const goal = `${s.mode.months} month${s.mode.months === 1 ? "" : "s"}`;
   const seen = c.accountsTotal > 0 && c.accountsSeen < c.accountsTotal ? `Based on ${c.accountsSeen} of ${c.accountsTotal} accounts active in the last 30 days.` : "";
   const notes = [seen, ...c.notes].filter(Boolean);
   return (
     <Card title="Now" icon={Sparkle} className={className} action={<Link href="/copilot" className="text-[12px] font-medium text-sub underline underline-offset-2">Can I buy this?</Link>}>
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:gap-10">
         <div>
-          <div className="text-[12px] text-muted">Safe to spend today</div>
+          <Tabs value={s.mode.key} items={s.modes.map((m) => ({ value: m.key, label: m.label }))} onChange={(mode) => act(() => api("/copilot/mode", { method: "PUT", body: { mode } }))} />
+          <div className="mt-4 text-[12px] text-muted">Safe to spend today</div>
           <div className={cn("num mt-1 whitespace-nowrap text-[40px] font-semibold leading-none sm:text-[52px]", toneText[s.tone])}>{whole(s.todayPaise)}</div>
           <div className="mt-4"><Meter ratio={s.ratio} tone={s.tone} /></div>
           <div className="num mt-1.5 flex flex-wrap justify-between gap-x-3 text-[12px] text-muted">
             <span>Spent {inr(s.spentPaise)}</span>
             <span>{s.leftPaise >= 0 ? `${whole(s.leftPaise)} left` : `${whole(-s.leftPaise)} over`} · tomorrow {whole(s.tomorrowPaise)}</span>
           </div>
+          <p className={cn("mt-3 text-[13px]", s.onFloor ? "text-warn" : "text-sub")}>
+            {s.mode.label} aims for {goal} without salary. {s.onFloor
+              ? <>You&apos;re <b className="num font-semibold">{whole(s.shortPaise)}</b> short, so this is the mode&apos;s minimum ({s.mode.floorPct}% of a usual day). At this budget, cash lasts <b className="num font-semibold">{days(s.sustainDays)}</b>.</>
+              : <>At this budget, cash lasts <b className="num font-semibold">{days(s.sustainDays)}</b>.</>}
+          </p>
           <details className="mt-3 text-[12px] text-muted">
             <summary className="cursor-pointer">Here&apos;s the maths</summary>
-            <p className="num mt-1.5">(Cash {inr(s.cashPaise)} − commitments {inr(s.committedPaise)} − buffer {inr(s.bufferPaise)}) ÷ {s.daysToSalary} days to {s.salarySet ? "salary" : "plan for"}</p>
-            {s.committed.length > 0 && <ul className="mt-1 space-y-0.5">{s.committed.map((e) => <li key={`${e.name}-${e.date}`} className="flex justify-between gap-3"><span className="truncate">{e.name} · {shortDate(e.date)}</span><span className="num">{inr(-e.paise)}</span></li>)}</ul>}
+            <p className="num mt-1.5">(Cash {inr(s.cashPaise)} − {goal} of commitments {inr(s.committedPaise)} − buffer {inr(s.bufferPaise)}) ÷ {s.mode.months * 30} days = {whole(s.goalPaise)} a day</p>
+            <ul className="mt-1 space-y-0.5">
+              {s.fixedPaise > 0 && <li className="flex justify-between gap-3"><span>Fixed costs</span><span className="num">{inr(s.fixedPaise)}</span></li>}
+              {s.committed.map((e) => <li key={e.name} className="flex justify-between gap-3"><span className="truncate">{e.name}{e.count && e.count > 1 ? ` × ${e.count}` : ` · ${shortDate(e.date)}`}</span><span className="num">{inr(-e.paise)}</span></li>)}
+            </ul>
+            <p className="mt-1">SIPs are left out: they pause if the salary stops.</p>
           </details>
         </div>
         <div className="space-y-3">
@@ -143,7 +155,7 @@ export function PurchaseCheck() {
           <div className="flex flex-wrap items-center gap-3"><Badge variant={VERDICT[c.verdict]} className="px-2 py-1 text-[13px]">{c.headline}</Badge>{c.costPerUsePaise ? <span className="num text-[13px] text-muted">{inr(c.costPerUsePaise)} per use</span> : null}{c.paybackMonths ? <span className="num text-[13px] text-muted">Pays for itself in {c.paybackMonths.toFixed(1)} months</span> : null}</div>
           <ul className="space-y-1 text-[14px] text-sub">
             <li><b className="font-semibold text-ink">Cost in runway:</b> <span className="num">{days(c.runwayCost)}</span> ({Math.round(c.runwayBefore)} → {Math.round(c.runwayAfter)})</li>
-            <li><b className="font-semibold text-ink">Cost in plans:</b> {c.planCost} Safe to spend goes from <span className="num">{whole(c.safeBeforePaise)}</span> to <span className="num">{whole(c.safeAfterPaise)}</span> a day until payday.</li>
+            <li><b className="font-semibold text-ink">Cost in plans:</b> {c.planCost} Safe to spend goes from <span className="num">{whole(c.safeBeforePaise)}</span> to <span className="num">{whole(c.safeAfterPaise)}</span> a day.</li>
             {c.reasons.map((r) => <li key={r}>{r}</li>)}
           </ul>
           <div><SectionTitle icon={HourglassMedium}>If you wait</SectionTitle><Scenarios c={c} /></div>

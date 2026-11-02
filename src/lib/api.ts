@@ -368,10 +368,12 @@ export type JoggerInput = { title: string; kind: JoggerKind; note?: string; remi
 export const useJogger = () => useQuery({ queryKey: ["jogger"], queryFn: () => api<JoggerList[]>("/jogger"), refetchInterval: 60_000 });
 
 // ---- Copilot: what to do now. Computed by the backend; money here is paise, runway is days ----
-export type CopilotEvent = { offset: number; date: string; name: string; paise: number; kind: "salary" | "mandate" | "emi" | "sip" | "card" | "renewal" };
+export type CopilotEvent = { offset: number; date: string; name: string; paise: number; kind: "salary" | "mandate" | "emi" | "sip" | "card" | "renewal"; count?: number };
+export type CopilotMode = { key: string; label: string; months: number; floorPct: number };
 export type Safe = {
   todayPaise: number; spentPaise: number; leftPaise: number; tomorrowPaise: number; ratio: number; tone: "good" | "warn" | "bad";
-  cashPaise: number; committedPaise: number; bufferPaise: number; daysToSalary: number; salarySet: boolean; committed: CopilotEvent[];
+  cashPaise: number; committedPaise: number; fixedPaise: number; bufferPaise: number; committed: CopilotEvent[];
+  mode: CopilotMode; modes: CopilotMode[]; goalPaise: number; onFloor: boolean; shortPaise: number; sustainDays: number;
 };
 export type Week = { days: number; inPaise: number; outPaise: number; events: CopilotEvent[]; lowestPaise: number; lowestDate: string; aboveBuffer: boolean; safePerDayPaise: number; priciest?: string };
 export type Advice = { kind: "timing" | "utilisation" | "payoff"; card: string; title: string; body: string; stakePaise: number };
@@ -389,7 +391,7 @@ export type CheckInput = { name?: string; amountPaise: number; need?: boolean; u
 export type CheckResult = {
   name?: string; amountPaise: number; verdict: "buy" | "wait" | "skip"; headline: string; runwayBefore: number; runwayAfter: number; runwayCost: number;
   safeBeforePaise: number; safeAfterPaise: number; planCost: string; earliest?: string; reasons: string[];
-  scenarios: { label: string; date: string; runwayAfter: number; safePerDayPaise: number; uncovered?: string; interestPaise: number; passes: boolean }[];
+  scenarios: { label: string; date: string; runwayAfter: number; safePerDayPaise: number; uncovered?: string; interestPaise: number; shortPaise: number; passes: boolean }[];
   coolOff: string; savePerDayPaise: number; saveBy: string; costPerUsePaise?: number; paybackMonths?: number;
   emi: { months: number; ratePct: number; feePct: number; extraPaise: number; monthlyPaise: number };
 };
