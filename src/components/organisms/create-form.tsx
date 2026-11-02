@@ -4,12 +4,13 @@ import { useState } from "react";
 import { Plus, type Icon } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { Button, Input, Select } from "../atoms";
-import { FormField, InlineError } from "../molecules";
+import { DatePicker, FormField, InlineError } from "../molecules";
 
 export type FieldDef = {
   name: string;
   label?: string;
   placeholder?: string;
+  /** datetime-local is a date and time chosen on the Calendar. */
   type?: "text" | "password" | "datetime-local" | "select";
   /** For type "select". The first empty option is the placeholder. */
   options?: { value: string; label: string }[];
@@ -74,6 +75,8 @@ export function CreateForm({ fields, onSubmit, submitLabel = "Add", submitIcon =
                 <option value="">{f.placeholder ?? "Select…"}</option>
                 {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </Select>
+            ) : f.type === "datetime-local" ? (
+              <DatePicker time name={f.name} aria-label={common["aria-label"]} className={f.className} />
             ) : (
               <Input {...common} type={f.type ?? "text"} placeholder={f.placeholder} pattern={f.pattern} maxLength={f.maxLength} inputMode={f.inputMode} className={f.className} />
             )}

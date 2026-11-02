@@ -9,7 +9,9 @@ import { inr } from "@/lib/money";
 import { cn } from "@/lib/cn";
 import { isDebit, signed, sourceLabel, vendorLabel } from "@/lib/txn";
 import { Button, CategoryLabel, Select } from "../atoms";
+import { useDialogs } from "./dialogs";
 import { OwedDialog } from "./owed-dialog";
+import { TransactionDialog } from "./transaction-dialog";
 import { SplitDialog } from "./split-dialog";
 import { InlineError } from "../molecules";
 import { DataTable, type Column, type DataTableProps } from "./data-table";
@@ -104,6 +106,8 @@ export type TransactionsTableProps = {
 
 export function TransactionsTable({ txns, accounts, cards, categories, loading, emptyText = "No transactions yet", sort, onSort }: TransactionsTableProps) {
   const [owing, setOwing] = useState<Txn | null>(null);
+  const [editing, setEditing] = useState<Txn | null>(null);
+  const dialogs = useDialogs();
   const [splitting, setSplitting] = useState<Txn | null>(null);
   const burn = useCopilot().data?.runway.burnDailyPaise ?? 0;
   const vendors = useVendors().data;
@@ -111,7 +115,7 @@ export function TransactionsTable({ txns, accounts, cards, categories, loading, 
   // A saved vendor's name beats the raw UPI id / SMS text.
   const nameOf = (t: Txn) => (t.vendor_id && names.get(t.vendor_id)) || vendorLabel(t);
   const act = useAct(TXN_KEYS);
-  const remove = (t: Txn) => window.confirm(`Delete this ${inr(t.amount_paise)} transaction? This can't be undone.`) && act(() => api(`/transactions/${t.id}`, { method: "DELETE" }), { ok: "Transaction deleted" });
+  const remove = async (t: Txn) => (await dialogs.confirm({ title: "Delete transaction?", message: `The ${inr(t.amount_paise)} payment to ${nameOf(t)} and its original message will be deleted for good.`, confirmLabel: "Delete", tone: "danger" })) && act(() => api(`/transactions/${t.id}`, { method: "DELETE" }), { ok: "Transaction deleted" });
   const columns: Column<Txn>[] = [
     { key: "date", header: "Date", sortKey: "date", cell: (t) => <span className="whitespace-nowrap text-muted">{shortDateTime(t.received_at ?? t.occurred_at)}</span> },
     {
@@ -142,14 +146,20 @@ export function TransactionsTable({ txns, accounts, cards, categories, loading, 
         ) : null,
     },
     {
-      key: "delete",
+      key: "actions",
       header: "",
-      cell: (t) => <button type="button" aria-label="Delete transaction" title="Delete (e.g. a duplicate)" onClick={() => remove(t)} className="text-muted hover:text-loss"><Trash size={16} /></button>,
+      cell: (t) => (
+        <span className="flex items-center gap-2.5">
+          <button type="button" aria-label="Edit transaction" title="Edit amount, date, account or payee" onClick={() => setEditing(t)} className="text-muted hover:text-ink"><PencilSimple size={16} /></button>
+          <button type="button" aria-label="Delete transaction" title="Delete (e.g. a duplicate)" onClick={() => remove(t)} className="text-muted hover:text-loss"><Trash size={16} /></button>
+        </span>
+      ),
     },
   ];
   return (
     <>
       <DataTable columns={columns} rows={txns} rowKey={(t) => t.id} loading={loading} sort={sort} onSort={onSort} emptyIcon={ArrowsLeftRight} emptyText={emptyText} />
+      {editing && <TransactionDialog key={editing.id} txn={editing} onClose={() => setEditing(null)} />}
       {owing && <OwedDialog key={owing.id} txn={owing} onClose={() => setOwing(null)} />}
       {splitting && <SplitDialog key={splitting.id} txn={splitting} onClose={() => setSplitting(null)} />}
     </>

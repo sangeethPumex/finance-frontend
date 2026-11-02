@@ -6,6 +6,7 @@ import { api, NAME_KEYS, useListCache, useWrite, type Category, type Vendor } fr
 import { Button, CategoryLabel } from "../atoms";
 import { InlineError, Tag } from "../molecules";
 import { DataTable, type Column, type DataTableProps } from "./data-table";
+import { useDialogs } from "./dialogs";
 import { EditDialog } from "./edit-dialog";
 import { MergeVendorDialog } from "./merge-vendor-dialog";
 
@@ -41,6 +42,7 @@ function AliasList({ v }: { v: Vendor }) {
 }
 
 function DeleteCell({ v }: { v: Vendor }) {
+  const dialogs = useDialogs();
   const del = useWrite(() => api(`/vendors/${v.id}`, { method: "DELETE" }), NAME_KEYS);
   const setVendors = useListCache<Vendor>("vendors");
   return (
@@ -51,7 +53,7 @@ function DeleteCell({ v }: { v: Vendor }) {
         icon={Trash}
         aria-label={`Delete ${v.name}`}
         loading={del.isPending}
-        onClick={() => { if (!confirm(`Delete ${v.name}? Its transactions go back to review.`)) return; setVendors((rows) => rows.filter((r) => r.id !== v.id)); del.mutate(undefined); }}
+        onClick={async () => { if (!(await dialogs.confirm({ title: "Delete vendor?", message: `${v.name} will be deleted. Its transactions go back to review.`, confirmLabel: "Delete", tone: "danger" }))) return; setVendors((rows) => rows.filter((r) => r.id !== v.id)); del.mutate(undefined); }}
       />
       <InlineError error={del.error} />
     </span>

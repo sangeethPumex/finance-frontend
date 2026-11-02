@@ -6,7 +6,7 @@ import { useAccounts, useCategories, type Frequency, type MandateInput } from "@
 import { cn } from "@/lib/cn";
 import { rupeesToPaise } from "@/lib/money";
 import { Button, Input, Select } from "../atoms";
-import { FormField, Modal } from "../molecules";
+import { FormField, Modal, DatePicker } from "../molecules";
 
 export const FREQUENCIES: { value: Frequency; label: string }[] = [
   { value: "monthly", label: "Monthly" }, { value: "quarterly", label: "Quarterly" }, { value: "yearly", label: "Yearly" }, { value: "one-off", label: "One-off" },
@@ -32,7 +32,7 @@ export function MandateForm({ initial, editing, onSave, onClose }: { initial?: P
           <FormField label="How often" icon={Repeat}>
             <Select value={d.frequency} onChange={set("frequency")}>{FREQUENCIES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}</Select>
           </FormField>
-          <FormField label="Next due date" icon={CalendarCheck} className="col-span-2" hint="Recurring ones roll forward from this date on their own"><Input type="date" value={d.next_due} onChange={set("next_due")} /></FormField>
+          <FormField label="Next due date" icon={CalendarCheck} className="col-span-2" hint="Recurring ones roll forward from this date on their own"><DatePicker value={d.next_due} onChange={(next_due) => setD({ ...d, next_due })} /></FormField>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <FormField label="Paid from" hint="Optional">

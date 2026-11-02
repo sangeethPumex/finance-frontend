@@ -5,7 +5,7 @@ import { ArrowsLeftRight, CalendarBlank, CurrencyInr, Plus, SignOut } from "@pho
 import type { FundView } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { Button, Input } from "../atoms";
-import { FormField, Modal, SectionTitle } from "../molecules";
+import { FormField, Modal, SectionTitle, DatePicker } from "../molecules";
 import { rs } from "./fund-row";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -52,7 +52,7 @@ export function RebalanceDialog({ funds, preselect = [], onExit, onAddIncoming, 
             })}
           </ul>
         )}
-        <div className="mt-4 max-w-[220px]"><FormField label="Date they moved out" icon={CalendarBlank}><Input type="date" max={today()} value={date} onChange={(e) => setDate(e.target.value)} /></FormField></div>
+        <div className="mt-4 max-w-[220px]"><FormField label="Date they moved out" icon={CalendarBlank}><DatePicker max={today()} value={date} onChange={setDate} /></FormField></div>
 
         <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-line pt-4">
           <Button type="submit" loading={pending} disabled={!ok} className={cn(!ok && "opacity-50")}>Record {picked.length || ""} move{picked.length === 1 ? "" : "s"} out</Button>

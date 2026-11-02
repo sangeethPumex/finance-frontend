@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowsLeftRight, Plus } from "@phosphor-icons/react";
 import { Button } from "@/components/atoms";
-import { AddTransactionDialog, Pager, TransactionsFilters, TransactionsTable } from "@/components/organisms";
+import { TransactionDialog, Pager, TransactionsFilters, TransactionsTable } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { type Sort, type TxnFilter, useAccounts, useCards, useCategories, useTransactionsPage } from "@/lib/api";
 
@@ -46,7 +46,7 @@ function Transactions() {
         emptyText={searching ? "No transactions match these filters" : "No transactions yet"}
       />
       <Pager page={page} pages={pages} total={total} limit={size} onPage={setPage} onLimit={(n) => { setSize(n); setPage(1); }} sizes={SIZES} />
-      {adding && <AddTransactionDialog onClose={() => setAdding(false)} />}
+      {adding && <TransactionDialog onClose={() => setAdding(false)} />}
     </PageLayout>
   );
 }

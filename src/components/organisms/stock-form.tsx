@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CalendarBlank, ChartLineUp, CurrencyInr, Hash, Storefront, Tag } from "@phosphor-icons/react";
 import type { StockInput } from "@/lib/api";
 import { Button, Input } from "../atoms";
-import { FormField, Modal } from "../molecules";
+import { FormField, Modal, DatePicker } from "../molecules";
 
 const PLATFORMS = ["Groww", "Motilal Oswal", "Geojit"];
 const today = () => new Date().toISOString().slice(0, 10);
@@ -24,7 +24,7 @@ export function StockForm({ initial, symbol, onSave, onClose }: { initial?: Stoc
         <div className="grid grid-cols-2 gap-4">
           <FormField label="Quantity" icon={Hash}><Input type="number" min={0} step="any" value={d.quantity} onChange={set("quantity")} /></FormField>
           <FormField label="Buy price (₹)" icon={CurrencyInr}><Input type="number" min={0} step="any" value={d.buyPrice} onChange={set("buyPrice")} /></FormField>
-          <FormField label="Buy date" icon={CalendarBlank}><Input type="date" max={today()} value={d.buyDate} onChange={set("buyDate")} /></FormField>
+          <FormField label="Buy date" icon={CalendarBlank}><DatePicker max={today()} value={d.buyDate} onChange={(buyDate) => setD({ ...d, buyDate })} /></FormField>
           <FormField label="Platform" icon={Storefront} hint="Optional"><Input list="stock-platforms" maxLength={40} value={d.platform} onChange={set("platform")} placeholder="Groww" /></FormField>
           <datalist id="stock-platforms">{PLATFORMS.map((p) => <option key={p} value={p} />)}</datalist>
         </div>

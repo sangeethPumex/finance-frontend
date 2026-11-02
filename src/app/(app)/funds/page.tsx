@@ -5,7 +5,7 @@ import { useIsMutating } from "@tanstack/react-query";
 import { ArrowDownRight, ArrowUpRight, ArrowsClockwise, ArrowsLeftRight, Bank, CaretDown, ChartPie, ClockCounterClockwise, Lightning, MagnifyingGlass, Plus, Repeat, SignIn, SignOut, Stack } from "@phosphor-icons/react";
 import { Button, Input, Select } from "@/components/atoms";
 import { Card, Donut, EmptyState, Modal, RowSkeleton, SectionTitle, StatCard, StatSkeleton, Tabs } from "@/components/molecules";
-import { ExitedRow, FundForm, FundListHeader, FundRow, GeniusSipDialog, RebalanceDialog, SIP_TONE, chip, pct, rs, sipStatus, type Exit } from "@/components/organisms";
+import { ExitedRow, FundForm, FundListHeader, FundRow, GeniusSipDialog, RebalanceDialog, SIP_TONE, chip, pct, rs, sipStatus, type Exit, useDialogs } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { api, type FundInput, type FundType, type FundView, type GeniusSip, type Sip, type SipStatus, useAccounts, useAct, useFunds } from "@/lib/api";
 import { bankName } from "@/lib/banks";
@@ -39,6 +39,7 @@ function GroupBar({ icon: Icon, title, sub, funds }: { icon: typeof Stack; title
 }
 
 export default function Funds() {
+  const dialogs = useDialogs();
   const q = useFunds();
   const act = useAct();
   const busy = useIsMutating() > 0;
@@ -234,7 +235,7 @@ export default function Funds() {
                           {st === "active" && <Button size="sm" loading={busy} disabled={!f.nav} onClick={() => act(() => api(`/funds/${f.id}/sip`, { method: "POST" }), { ok: "SIP instalment recorded" })}>Record SIP instalment</Button>}
                           {st === "active" && <Button size="sm" variant="ghost" disabled={busy} onClick={() => setSip("paused", "SIP paused")}>Pause</Button>}
                           {st !== "active" && <Button size="sm" loading={busy} onClick={() => setSip("active", "SIP resumed")}>{st === "paused" ? "Resume" : "Restart"}</Button>}
-                          {st !== "cancelled" && <Button size="sm" variant="ghost" onClick={() => window.confirm("Cancel this SIP? You can restart it later.") && setSip("cancelled", "SIP cancelled")}>Cancel SIP</Button>}
+                          {st !== "cancelled" && <Button size="sm" variant="ghost" onClick={async () => (await dialogs.confirm({ title: "Cancel this SIP?", message: "You can restart it later.", confirmLabel: "Cancel SIP", tone: "danger" })) && setSip("cancelled", "SIP cancelled")}>Cancel SIP</Button>}
                         </div>
                       </>
                     );
@@ -251,7 +252,7 @@ export default function Funds() {
                   {f.active && f.membership === "Genius" && <Button size="sm" variant="ghost" icon={SignOut} onClick={() => { setOpen(null); setRebalance([f.id]); }}>Moved out of Genius</Button>}
                   {!f.active && <Button size="sm" loading={busy} icon={SignIn} onClick={() => act(() => api(`/funds/${f.id}/reenter`, { method: "POST" }), { ok: "Fund is back in your portfolio" })}>Move back in</Button>}
                   <Button size="sm" variant="ghost" onClick={() => { setOpen(null); setForm(f); }}>Edit</Button>
-                  <Button size="sm" variant="ghost" onClick={() => window.confirm(`Remove ${f.name} and its history?`) && act(() => api(`/funds/${f.id}`, { method: "DELETE" }), { ok: "Fund removed", onDone: () => setOpen(null) })}>Remove</Button>
+                  <Button size="sm" variant="ghost" onClick={async () => (await dialogs.confirm({ title: "Remove fund?", message: `${f.name} and its history will be deleted.`, confirmLabel: "Remove", tone: "danger" })) && act(() => api(`/funds/${f.id}`, { method: "DELETE" }), { ok: "Fund removed", onDone: () => setOpen(null) })}>Remove</Button>
                 </div>
               </div>
             </div>

@@ -10,6 +10,7 @@ import { inr } from "@/lib/money";
 import { Button, Input } from "../atoms";
 import { FormField, Meter, Modal, Tabs } from "../molecules";
 import { KIND_ICON, KIND_LABEL } from "./emi-form";
+import { useDialogs } from "./dialogs";
 import { LoanSchedule } from "./loan-schedule";
 import { RateHistory } from "./rate-history";
 
@@ -74,6 +75,7 @@ function Instalments({ paid, total, active }: { paid: number; total: number; act
 
 /** One loan as an expandable summary: balance first, one primary action, the rest in a menu. All figures come from the backend. */
 export function EmiCard({ emi, onEdit }: { emi: EmiView; onEdit: () => void }) {
+  const dialogs = useDialogs();
   const act = useAct();
   const busy = useIsMutating() > 0;
   const [open, setOpen] = useState(false);
@@ -81,8 +83,11 @@ export function EmiCard({ emi, onEdit }: { emi: EmiView; onEdit: () => void }) {
   const [tab, setTab] = useState<"overview" | "breakdown">("overview");
   const Icon = KIND_ICON[emi.kind], isCard = emi.kind === "card", history = emi.payments ?? [];
   const post = (body: unknown) => act(() => api(`/emis/${emi.id}/payments`, { method: "POST", body }), { ok: "Payment recorded" });
-  const reconcile = () => {
-    const v = window.prompt("Outstanding balance from your lender statement (₹)", String(emi.balance ?? emi.left));
+  const reconcile = async () => {
+    const v = await dialogs.prompt({
+      title: "Update balance", label: "Outstanding balance from your lender statement (₹)", initial: String(emi.balance ?? emi.left), inputMode: "decimal", confirmLabel: "Update",
+      validate: (s) => (s !== "" && Number.isFinite(Number(s)) && Number(s) >= 0 ? undefined : "Enter an amount, zero or more"),
+    });
     const n = v === null || v.trim() === "" ? NaN : Number(v);
     if (Number.isFinite(n) && n >= 0) act(() => api(`/emis/${emi.id}/balance`, { method: "PUT", body: { balance: n } }), { ok: "Balance updated" });
   };
@@ -114,7 +119,7 @@ export function EmiCard({ emi, onEdit }: { emi: EmiView; onEdit: () => void }) {
               {menu("Edit", onEdit)}
               {emi.balance !== undefined && menu("Update balance", reconcile)}
               {menu("Undo last payment", () => act(() => api(`/emis/${emi.id}/payments/last`, { method: "DELETE" }), { ok: "Last payment undone" }), history.length === 0)}
-              {menu("Delete", () => window.confirm(`Delete ${emi.name}?`) && act(() => api(`/emis/${emi.id}`, { method: "DELETE" }), { ok: "Loan deleted" }))}
+              {menu("Delete", async () => (await dialogs.confirm({ title: "Delete loan?", message: `${emi.name} and its payment history will be deleted.`, confirmLabel: "Delete", tone: "danger" })) && act(() => api(`/emis/${emi.id}`, { method: "DELETE" }), { ok: "Loan deleted" }))}
             </div>
           </details>
         </div>

@@ -6,7 +6,7 @@ import type { JoggerInput, JoggerKind, JoggerList } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { rupeesToPaise } from "@/lib/money";
 import { Button, Input } from "../atoms";
-import { FormField, Modal } from "../molecules";
+import { FormField, Modal, DatePicker } from "../molecules";
 
 export const LEAD_CHOICES = [
   { mins: 120, label: "2 hr" }, { mins: 60, label: "1 hr" }, { mins: 30, label: "30 min" }, { mins: 15, label: "15 min" }, { mins: 5, label: "5 min" }, { mins: 0, label: "On time" },
@@ -61,7 +61,7 @@ export function JoggerForm({ initial, onSave, onClose }: { initial?: JoggerList;
           ))}
         </div>
         <FormField label={kind === "shopping" ? "Where / what for" : "Remind me to"} icon={Tag}><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={kind === "shopping" ? "Forum Mall" : "Call the bank"} autoFocus /></FormField>
-        <FormField label="When" icon={CalendarCheck}><Input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} /></FormField>
+        <FormField label="When" icon={CalendarCheck}><DatePicker time value={at} onChange={setAt} /></FormField>
 
         <div>
           <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-sub"><Bell size={14} className="text-muted" />Alert me</span>

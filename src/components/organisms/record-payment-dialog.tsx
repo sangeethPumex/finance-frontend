@@ -5,7 +5,7 @@ import { Bank, CalendarBlank, CurrencyInr, Note, Receipt } from "@phosphor-icons
 import { api, useAccounts, useAct, type Card } from "@/lib/api";
 import { inr, rupeesToPaise } from "@/lib/money";
 import { Button, Input, Select } from "../atoms";
-import { FormField, Modal } from "../molecules";
+import { FormField, Modal, DatePicker } from "../molecules";
 
 const todayIst = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
@@ -45,7 +45,7 @@ export function RecordPaymentDialog({ card: c, onClose }: { card: Card; onClose:
         </div>
         <div className="grid grid-cols-2 gap-4">
           <FormField label="Amount paid (₹)" icon={CurrencyInr} hint="Less than the due amount is a partial payment"><Input type="number" min={0} step="any" value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus /></FormField>
-          <FormField label="Payment date" icon={CalendarBlank}><Input type="date" max={todayIst()} value={date} onChange={(e) => setDate(e.target.value)} /></FormField>
+          <FormField label="Payment date" icon={CalendarBlank}><DatePicker max={todayIst()} value={date} onChange={setDate} /></FormField>
           <FormField label="Paid from" icon={Bank} hint="Optional" className="col-span-2">
             <Select value={account} onChange={(e) => setAccount(e.target.value)}><option value="">Not specified</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}{a.last4 && ` ••${a.last4}`}</option>)}</Select>
           </FormField>

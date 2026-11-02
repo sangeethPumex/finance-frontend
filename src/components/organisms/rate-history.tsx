@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Percent, X } from "@phosphor-icons/react";
 import { api, type EmiView, useAct } from "@/lib/api";
 import { Button, Input } from "../atoms";
-import { FormField, Modal } from "../molecules";
+import { FormField, Modal, DatePicker } from "../molecules";
 
 const when = (s: string) => (s ? new Date(`${s}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit", timeZone: "UTC" }) : "Start");
 const today = () => new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
@@ -17,7 +17,7 @@ function ChangeRate({ emi, onClose }: { emi: EmiView; onClose: () => void }) {
     <Modal title="Interest rate change" subtitle={emi.name} icon={Percent} onClose={onClose}>
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (ok) act(() => api(`/emis/${emi.id}/rates`, { method: "POST", body: { from: v.from, rate } }), { ok: "Rate updated", onDone: onClose }); }}>
         <div className="grid grid-cols-2 gap-4">
-          <FormField label="Effective from"><Input type="date" value={v.from} onChange={(e) => setV({ ...v, from: e.target.value })} /></FormField>
+          <FormField label="Effective from"><DatePicker value={v.from} onChange={(from) => setV({ ...v, from })} /></FormField>
           <FormField label="New rate (% a year)"><Input type="number" min={0} step="any" value={v.rate} onChange={(e) => setV({ ...v, rate: e.target.value })} placeholder={String(emi.rate ?? "")} autoFocus /></FormField>
         </div>
         <Button type="submit" disabled={!ok}>Save</Button>

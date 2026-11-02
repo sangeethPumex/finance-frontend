@@ -5,7 +5,7 @@ import { ArrowsClockwise, CalendarBlank, CalendarCheck, CalendarDots, CaretDown,
 import { cn } from "@/lib/cn";
 import { Badge, Button } from "@/components/atoms";
 import { Card, EmptyState, ListRow, RowList, RowSkeleton, StatCard, StatSkeleton } from "@/components/molecules";
-import { FREQUENCIES, MandateForm } from "@/components/organisms";
+import { FREQUENCIES, MandateForm, useDialogs } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { api, type Mandate, type MandateInput, type MandateOcc, useAct, useMandateSuggestions, useMandates } from "@/lib/api";
 import { inr } from "@/lib/money";
@@ -66,6 +66,7 @@ function Calendar({ occ }: { occ: MandateOcc[] }) {
 }
 
 export default function Mandates() {
+  const dialogs = useDialogs();
   const q = useMandates(), sug = useMandateSuggestions();
   const act = useAct();
   // undefined = closed; otherwise the mandate being edited, or the starting values of a new one
@@ -116,7 +117,7 @@ export default function Mandates() {
                     <span className="flex items-center gap-2">
                       {!m.next && <Badge variant="warn">Passed</Badge>}{m.next && m.days <= 7 && <Badge variant="warn">{inDays(m.days)}</Badge>}{inr(m.amount_paise)}
                       <Button size="icon" variant="quiet" icon={PencilSimple} aria-label={`Edit ${m.name}`} onClick={() => edit(m)} />
-                      <Button size="icon" variant="quiet" icon={Trash} aria-label={`Delete ${m.name}`} onClick={() => window.confirm(`Delete ${m.name}?`) && act(() => api(`/mandates/${m.id}`, { method: "DELETE" }), { ok: "Mandate deleted" })} />
+                      <Button size="icon" variant="quiet" icon={Trash} aria-label={`Delete ${m.name}`} onClick={async () => (await dialogs.confirm({ title: "Delete mandate?", message: `${m.name} will be deleted.`, confirmLabel: "Delete", tone: "danger" })) && act(() => api(`/mandates/${m.id}`, { method: "DELETE" }), { ok: "Mandate deleted" })} />
                     </span>
                   } />
               ))}

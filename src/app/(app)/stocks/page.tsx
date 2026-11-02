@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ArrowDownRight, ArrowUpRight, ChartLineUp, ClockCounterClockwise, Plus } from "@phosphor-icons/react";
 import { Button, CompanyLogo } from "@/components/atoms";
 import { Card, Donut, EmptyState, Modal, RowSkeleton, SectionTitle, StatCard, StatSkeleton, Tabs } from "@/components/molecules";
-import { StockChart, StockForm, StockHeatmap, TickerTape, type HeatMetric } from "@/components/organisms";
+import { StockChart, StockForm, StockHeatmap, TickerTape, type HeatMetric, useDialogs } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { api, type StockInput, type StockLot, type StockPosition, useAct, useStocks } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -30,6 +30,7 @@ const toInput = (l: StockLot): StockInput => ({ symbol: l.symbol, quantity: l.qu
 type FormState = undefined | { lot?: StockLot; symbol?: string };
 
 export default function Stocks() {
+  const dialogs = useDialogs();
   const q = useStocks();
   const act = useAct();
   const [open, setOpen] = useState<string | null>(null);
@@ -149,7 +150,7 @@ export default function Stocks() {
                     <td className={cn("p-3 text-right", text(l.pnl))}>{sign(l.pnl)}{rs(l.pnl)}<div className="text-[11px]">{pct(l.returnPct)}</div></td>
                     <td className="whitespace-nowrap p-3 text-right">
                       <Button size="sm" variant="ghost" onClick={() => { setOpen(null); setForm({ lot: l }); }}>Edit</Button>
-                      <Button size="sm" variant="ghost" onClick={() => window.confirm("Remove this purchase?") && act(() => api(`/stocks/${l.id}`, { method: "DELETE" }), { ok: "Purchase removed", onDone: () => sel.lots.length === 1 && setOpen(null) })}>Remove</Button>
+                      <Button size="sm" variant="ghost" onClick={async () => (await dialogs.confirm({ title: "Remove this purchase?", message: "It will no longer count in your holding.", confirmLabel: "Remove", tone: "danger" })) && act(() => api(`/stocks/${l.id}`, { method: "DELETE" }), { ok: "Purchase removed", onDone: () => sel.lots.length === 1 && setOpen(null) })}>Remove</Button>
                     </td>
                   </tr>
                 ))}

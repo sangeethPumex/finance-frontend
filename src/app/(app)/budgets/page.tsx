@@ -3,7 +3,7 @@
 import { PencilSimple, Target, Trash } from "@phosphor-icons/react";
 import { Badge, Button, CategoryLabel } from "@/components/atoms";
 import { Card, EmptyState, Meter, RowList, RowSkeleton, StatCard, StatSkeleton } from "@/components/molecules";
-import { CreateForm, type FieldDef } from "@/components/organisms";
+import { CreateForm, type FieldDef, useDialogs } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { api, type BudgetStatus, useAct, useBudgets, useCategories, useWrite } from "@/lib/api";
 import { inr, rupeesToPaise } from "@/lib/money";
@@ -12,6 +12,7 @@ const TONE = { ok: "good", warn: "warn", over: "bad" } as const;
 const LABEL = { ok: "", warn: "Nearly there", over: "Over budget" } as const;
 
 export default function Budgets() {
+  const dialogs = useDialogs();
   const budgets = useBudgets(), cats = useCategories(), act = useAct();
   const save = useWrite(({ id, paise }: { id: string; paise: number }) => api(`/budgets/${id}`, { method: "PUT", body: { limit_paise: paise } }));
   const name = (id: string) => cats.data?.find((c) => c.id === id)?.name ?? "Category";
@@ -23,8 +24,12 @@ export default function Budgets() {
     { name: "category", type: "select", placeholder: "Category", required: true, options: (cats.data ?? []).map((c) => ({ value: c.id, label: c.name })) },
     { name: "limit", placeholder: "Monthly limit ₹", required: true, inputMode: "decimal" },
   ];
-  const change = (b: BudgetStatus) => {
-    const p = rupeesToPaise(window.prompt(`New monthly limit for ${name(b.category_id)} (₹)`, String(b.limit_paise / 100)) ?? "");
+  const change = async (b: BudgetStatus) => {
+    const v = await dialogs.prompt({
+      title: `${name(b.category_id)} limit`, label: "New monthly limit (₹)", initial: String(b.limit_paise / 100), inputMode: "decimal", confirmLabel: "Change limit",
+      validate: (s) => { const p = rupeesToPaise(s); return p && p > 0 ? undefined : "Enter an amount above zero"; },
+    });
+    const p = rupeesToPaise(v ?? "");
     if (p && p > 0) act(() => api(`/budgets/${b.category_id}`, { method: "PUT", body: { limit_paise: p } }), { ok: "Limit changed" });
   };
 
@@ -63,7 +68,7 @@ export default function Budgets() {
                   <span className="num shrink-0 text-[13px]">{inr(b.spent_paise)} <span className="text-muted">of {inr(b.limit_paise)}</span></span>
                   <Button variant="quiet" size="icon" icon={PencilSimple} aria-label={`Change ${name(b.category_id)} limit`} onClick={() => change(b)} />
                   <Button variant="quiet" size="icon" icon={Trash} aria-label={`Delete ${name(b.category_id)} budget`}
-                    onClick={() => confirm(`Remove the ${name(b.category_id)} budget?`) && act(() => api(`/budgets/${b.category_id}`, { method: "DELETE" }), { ok: "Budget removed" })} />
+                    onClick={async () => (await dialogs.confirm({ title: "Remove budget?", message: `The ${name(b.category_id)} limit goes away. Your transactions stay.`, confirmLabel: "Remove", tone: "danger" })) && act(() => api(`/budgets/${b.category_id}`, { method: "DELETE" }), { ok: "Budget removed" })} />
                 </div>
                 <div className="mt-2"><Meter ratio={b.ratio} tone={TONE[b.level]} /></div>
               </li>

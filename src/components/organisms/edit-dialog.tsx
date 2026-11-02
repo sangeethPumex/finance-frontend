@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PencilSimple } from "@phosphor-icons/react";
 import { Button, Input, Select } from "../atoms";
-import { FormField, InlineError, Modal } from "../molecules";
+import { DatePicker, FormField, InlineError, Modal } from "../molecules";
 import type { FieldDef } from "./create-form";
 
 export type EditDialogProps = {
@@ -46,6 +46,8 @@ export function EditDialog({ title, fields, onSave, pending, error }: EditDialog
                       <option value="">{f.placeholder ?? "None"}</option>
                       {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </Select>
+                  ) : f.type === "datetime-local" ? (
+                    <DatePicker time name={f.name} defaultValue={f.defaultValue} aria-label={common["aria-label"]} />
                   ) : (
                     <Input {...common} type={f.type ?? "text"} placeholder={f.placeholder} pattern={f.pattern} maxLength={f.maxLength} inputMode={f.inputMode} />
                   )}

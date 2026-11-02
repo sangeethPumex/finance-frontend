@@ -46,7 +46,7 @@ export type Txn = {
   bank?: string; account_last4?: string; account_id?: string; card_id?: string;
   /** The credit card this payment settled (category "Credit card payments"). */
   paid_card_id?: string;
-  raw_vendor?: string; upi_id?: string; vendor_id?: string; category_id?: string; note?: string; model?: string;
+  raw_vendor?: string; upi_id?: string; vendor_id?: string; category_id?: string; ref?: string; note?: string; model?: string;
   /** Paid for someone else: how much of this payment they owe back, and how much has come back. Not counted as the user's spend. */
   owed_from?: string; owed_paise?: number; repaid_paise?: number;
   /** One payment spread over several categories; the parts add up to amount_paise. */

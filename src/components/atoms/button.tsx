@@ -1,13 +1,14 @@
 import type { Icon } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 
-export type ButtonVariant = "solid" | "ghost" | "quiet";
+export type ButtonVariant = "solid" | "ghost" | "quiet" | "danger";
 export type ButtonSize = "sm" | "md" | "lg" | "icon";
 
 const variants: Record<ButtonVariant, string> = {
   solid: "bg-ink text-white hover:-translate-y-px hover:scale-[1.015] hover:bg-ink/85",
   ghost: "border border-strong text-muted hover:bg-tint hover:text-sub",
   quiet: "text-muted hover:bg-tint hover:text-ink",
+  danger: "bg-loss text-white hover:bg-loss/85",
 };
 
 const sizes: Record<ButtonSize, string> = {

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowDownLeft, ArrowUpRight, Calendar, CalendarCheck, CalendarDots, ChartLineUp, PiggyBank, Sparkle, SquaresFour, Wallet } from "@phosphor-icons/react";
 import { Button } from "@/components/atoms";
-import { Card, Meter, PanelSkeleton, StatCard, StatSkeleton, Tabs } from "@/components/molecules";
+import { Card, Meter, PanelSkeleton, StatCard, StatSkeleton, Tabs, DatePicker } from "@/components/molecules";
 import { AccountBalances, CashflowPanel, NetWorthChart, NowCard, PositionPanel, RecentActivity, RunwayPanel, SpendingHeatmap, WeekAhead } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { type PeriodKey, fetchAdvice, useAccounts, useBudgets, useCopilot, useDashboard } from "@/lib/api";
@@ -39,8 +39,8 @@ export default function Dashboard() {
     <div className="flex flex-wrap items-center justify-end gap-2">
       {period === "custom" && (
         <>
-          <input type="date" aria-label="From" value={custom.from} onChange={(e) => setCustom({ ...custom, from: e.target.value })} className="h-9 border border-line px-2 text-[13px]" />
-          <input type="date" aria-label="To" value={custom.to} onChange={(e) => setCustom({ ...custom, to: e.target.value })} className="h-9 border border-line px-2 text-[13px]" />
+          <DatePicker size="sm" aria-label="From" placeholder="From" max={custom.to || undefined} value={custom.from} onChange={(from) => setCustom({ ...custom, from })} className="min-w-36" />
+          <DatePicker size="sm" aria-label="To" placeholder="To" min={custom.from || undefined} value={custom.to} onChange={(to) => setCustom({ ...custom, to })} className="min-w-36" />
         </>
       )}
       <Tabs<PeriodKey> value={period} items={PERIODS} onChange={setPeriod} />

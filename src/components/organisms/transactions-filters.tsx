@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { BookmarkSimple, MagnifyingGlass, X } from "@phosphor-icons/react";
 import { api, useAct, useViews, type Account, type Card, type Category, type TxnFilter } from "@/lib/api";
 import { Button, Input, Select } from "../atoms";
-import { Tag } from "../molecules";
+import { DatePicker, Tag } from "../molecules";
+import { useDialogs } from "./dialogs";
 
 /** A view is stored as strings (the list's query parameters), so the owed flag round-trips as "true". */
 const toFilter = (f: Record<string, string>) => ({ ...f, owed: f.owed === "true" || undefined }) as TxnFilter;
@@ -13,6 +14,7 @@ const toStored = (f: TxnFilter) => Object.fromEntries(Object.entries(f).filter((
 /** Search box, filters and saved views. The parent owns the filter and fetches; this only edits it. */
 export function TransactionsFilters({ value, onChange, accounts, cards = [], categories }: { value: TxnFilter; onChange: (f: TxnFilter) => void; accounts: Account[]; cards?: Card[]; categories: Category[] }) {
   const act = useAct();
+  const dialogs = useDialogs();
   const views = useViews().data ?? [];
   const [text, setText] = useState(value.q ?? "");
   useEffect(() => setText(value.q ?? ""), [value.q]); // a saved view replaces the typed text
@@ -24,8 +26,8 @@ export function TransactionsFilters({ value, onChange, accounts, cards = [], cat
 
   const set = (k: keyof TxnFilter) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => onChange({ ...value, [k]: e.target.value });
   const active = Object.values(value).some(Boolean);
-  const save = () => {
-    const name = window.prompt("Name this view")?.trim();
+  const save = async () => {
+    const name = await dialogs.prompt({ title: "Save view", label: "Name this view", confirmLabel: "Save view", maxLength: 40, validate: (s) => (s ? undefined : "Give the view a name") });
     if (!name) return;
     act(() => api("/views", { method: "PUT", body: { name, filter: toStored(value) } }), { ok: "View saved" });
   };
@@ -49,7 +51,7 @@ export function TransactionsFilters({ value, onChange, accounts, cards = [], cat
         <Select aria-label="Direction" value={value.direction ?? ""} onChange={set("direction")}><option value="">In and out</option><option value="debit">Money out</option><option value="credit">Money in</option></Select>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted">
-        <Input type="date" size="sm" aria-label="From date" value={value.from ?? ""} onChange={set("from")} />–<Input type="date" size="sm" aria-label="To date" value={value.to ?? ""} onChange={set("to")} />
+        <DatePicker size="sm" clearable placeholder="From" aria-label="From date" max={value.to || undefined} value={value.from ?? ""} onChange={(v) => onChange({ ...value, from: v })} className="min-w-32" />–<DatePicker size="sm" clearable placeholder="To" aria-label="To date" min={value.from || undefined} value={value.to ?? ""} onChange={(v) => onChange({ ...value, to: v })} className="min-w-32" />
         <Input type="number" min={0} size="sm" aria-label="Minimum amount" className="w-24" placeholder="Min ₹" value={value.min ?? ""} onChange={set("min")} />
         <Input type="number" min={0} size="sm" aria-label="Maximum amount" className="w-24" placeholder="Max ₹" value={value.max ?? ""} onChange={set("max")} />
         <label className="flex items-center gap-1.5"><input type="checkbox" checked={!!value.owed} onChange={(e) => onChange({ ...value, owed: e.target.checked || undefined })} />Owed to me</label>

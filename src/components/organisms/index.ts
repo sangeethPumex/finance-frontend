@@ -1,5 +1,6 @@
 export * from "./accounts-table";
-export * from "./add-transaction-dialog";
+export * from "./transaction-dialog";
+export * from "./dialogs";
 export * from "./card-face";
 export * from "./card-form";
 export * from "./card-tile";

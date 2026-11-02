@@ -6,7 +6,7 @@ import { Bell, CheckCircle, Circle, ListChecks, PencilSimple, Plus, ShoppingCart
 import { cn } from "@/lib/cn";
 import { Badge, Button } from "@/components/atoms";
 import { Card, EmptyState, RowSkeleton } from "@/components/molecules";
-import { JoggerForm, PushCard } from "@/components/organisms";
+import { JoggerForm, PushCard, useDialogs } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { api, type JoggerInput, type JoggerItem, type JoggerList, useAct, useJogger } from "@/lib/api";
 import { inr } from "@/lib/money";
@@ -66,6 +66,7 @@ function ListCard({ l, onEdit, onToggle, onDone, onDelete }: { l: JoggerList; on
 }
 
 export default function Jogger() {
+  const dialogs = useDialogs();
   const q = useJogger(), act = useAct(["jogger"]);
   // undefined = closed; null = a new list; otherwise the one being edited
   const [form, setForm] = useState<JoggerList | null | undefined>(undefined);
@@ -79,7 +80,7 @@ export default function Jogger() {
       if (r.deleted) toast.success(`${l.title}: everything bought, list cleared`);
     });
   const finish = (l: JoggerList) => act(() => api(`/jogger/${l.id}`, { method: "DELETE" }), { ok: l.kind === "shopping" ? `${l.title} cleared` : "Done" });
-  const remove = (l: JoggerList) => window.confirm(`Delete ${l.title}?`) && act(() => api(`/jogger/${l.id}`, { method: "DELETE" }), { ok: "Deleted" });
+  const remove = async (l: JoggerList) => (await dialogs.confirm({ title: "Delete list?", message: `${l.title} will be deleted.`, confirmLabel: "Delete", tone: "danger" })) && act(() => api(`/jogger/${l.id}`, { method: "DELETE" }), { ok: "Deleted" });
 
   return (
     <PageLayout title="Brain Jogger" icon={ListChecks} error={q.error} description="Shopping lists and things to remember, with a nudge before they are due" action={<Button icon={Plus} disabled={!q.isSuccess} onClick={() => setForm(null)}>New</Button>}>

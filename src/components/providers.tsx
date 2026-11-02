@@ -4,6 +4,7 @@ import { useState } from "react";
 import { IconContext } from "@phosphor-icons/react";
 import { QueryClient, QueryClientProvider, useIsFetching, useIsMutating } from "@tanstack/react-query";
 import { Toaster } from "sonner";
+import { DialogProvider } from "./organisms/dialogs";
 
 /** Thin indeterminate bar at the top while any request is in flight;. */
 function TopLoader() {
@@ -20,7 +21,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { staleTime: 15_000, retry: 1, refetchOnWindowFocus: false } } }));
   return (
     <IconContext.Provider value={{ weight: "light" }}>
-      <QueryClientProvider client={client}><TopLoader />{children}</QueryClientProvider>
+      <QueryClientProvider client={client}><TopLoader /><DialogProvider>{children}</DialogProvider></QueryClientProvider>
       <Toaster position="top-right" richColors closeButton toastOptions={{ style: { borderRadius: 2 } }} />
     </IconContext.Provider>
   );

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { BellRinging, ChartDonut, Trash } from "@phosphor-icons/react";
 import { Button, Input, Select } from "@/components/atoms";
-import { BarRow, Card, EmptyState, FormField, StatCard, Tabs } from "@/components/molecules";
+import { BarRow, Card, EmptyState, FormField, StatCard, Tabs, DatePicker } from "@/components/molecules";
 import { PageLayout } from "@/components/templates";
 import { api, type AllocSlice, type Return, type SipCheck, type Target, useAct, useAlerts, useIncome, usePortfolio } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -151,7 +151,7 @@ function IncomeTab() {
       )}
       <Card title="Add income">
         <form className="grid gap-4 sm:grid-cols-5" onSubmit={(e) => { e.preventDefault(); act(() => api("/portfolio/income", { method: "POST", body: { ...f, amount: Number(f.amount) } }), { ok: "Income added", onDone: () => setF({ ...f, source: "", amount: "" }) }); }}>
-          <FormField label="Date"><Input type="date" max={new Date().toISOString().slice(0, 10)} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></FormField>
+          <FormField label="Date"><DatePicker max={new Date().toISOString().slice(0, 10)} value={f.date} onChange={(date) => setF({ ...f, date })} /></FormField>
           <FormField label="Kind"><Select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}><option value="dividend">Dividend</option><option value="interest">Interest</option></Select></FormField>
           <FormField label="Source"><Input maxLength={60} value={f.source} onChange={(e) => setF({ ...f, source: e.target.value })} placeholder="TCS, SBI FD…" /></FormField>
           <FormField label="Amount (₹)"><Input type="number" min={0} step="any" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></FormField>
