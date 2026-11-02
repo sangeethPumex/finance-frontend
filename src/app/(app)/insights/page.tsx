@@ -2,14 +2,15 @@
 
 import { Clock, Lightbulb } from "@phosphor-icons/react";
 import { Card, PanelSkeleton, StatCard, StatSkeleton } from "@/components/molecules";
-import { AnomalyList, RecurringList, WeekdayBars } from "@/components/organisms";
+import { AnomalyList, RecurringList, SubscriptionsCard, WeekdayBars } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
-import { useInsights, useMandates } from "@/lib/api";
+import { useCopilot, useInsights, useMandates } from "@/lib/api";
 import { inr } from "@/lib/money";
 
 export default function Insights() {
   const q = useInsights(), d = q.data;
   const mandates = useMandates().data;
+  const subs = useCopilot().data?.subscriptions;
   const active = d?.recurring.filter((r) => r.status === "active") ?? [];
   // A detected charge counts as tracked when a mandate has a similar name (either contains the other).
   const tracked = (name: string) => (mandates?.items ?? []).some((m) => { const a = m.name.toLowerCase(), b = name.toLowerCase(); return a.includes(b) || b.includes(a); });
@@ -32,6 +33,7 @@ export default function Insights() {
             <AnomalyList items={d.anomalies} />
             <RecurringList items={d.recurring} monthlyPaise={d.monthly_paise} tracked={tracked} />
           </div>
+          {subs && <div className="mt-4"><SubscriptionsCard items={subs} /></div>}
           <div className="mt-4">
             <Card title="When you spend" icon={Clock}><WeekdayBars patterns={d.patterns} /></Card>
           </div>

@@ -2,15 +2,14 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Bell, BellRinging, BellSlash, CheckCircle, Circle, ListChecks, PencilSimple, Plus, ShoppingCart, Trash } from "@phosphor-icons/react";
+import { Bell, CheckCircle, Circle, ListChecks, PencilSimple, Plus, ShoppingCart, Trash } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { Badge, Button } from "@/components/atoms";
 import { Card, EmptyState, RowSkeleton } from "@/components/molecules";
-import { JoggerForm } from "@/components/organisms";
+import { JoggerForm, PushCard } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { api, type JoggerInput, type JoggerItem, type JoggerList, useAct, useJogger } from "@/lib/api";
 import { inr } from "@/lib/money";
-import { usePush } from "@/lib/push";
 
 const whenText = (iso: string) => {
   const d = new Date(iso), now = new Date();
@@ -24,31 +23,6 @@ const rel = (iso: string) => {
   const span = a < 60 ? `${a} min` : a < 1440 ? `${Math.round(a / 60)} hr` : `${Math.round(a / 1440)} day${Math.round(a / 1440) === 1 ? "" : "s"}`;
   return m >= 0 ? (m === 0 ? "now" : `in ${span}`) : `${span} ago`;
 };
-
-/** Turns push notifications on for this device; says what to do when it cannot. */
-function PushCard() {
-  const { state, enable, disable, test } = usePush();
-  const [busy, setBusy] = useState(false);
-  const run = (fn: () => Promise<unknown>, ok?: string) => { setBusy(true); fn().then(() => ok && toast.success(ok)).catch((e) => toast.error(e instanceof Error ? e.message : "Something went wrong")).finally(() => setBusy(false)); };
-
-  if (state === "loading") return null;
-  const msg: Partial<Record<typeof state, string>> = {
-    unsupported: "This browser cannot show push notifications. On iPhone, add Catalyst to your Home Screen (Share, then Add to Home Screen) and open it from there.",
-    "server-off": "Push is not set up on the server yet (VAPID keys are missing), so lists will not alert you.",
-    denied: "Notifications are blocked for Catalyst. Turn them on in your phone's Settings, then come back.",
-  };
-  return (
-    <div className={cn("mb-4 flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3", state === "on" ? "border-line bg-surface" : "border-line bg-warn-bg")}>
-      <span className={cn("grid size-9 shrink-0 place-items-center rounded-full", state === "on" ? "bg-gain-bg text-gain" : "bg-surface text-warn")}>{state === "on" ? <BellRinging size={17} weight="duotone" /> : <BellSlash size={17} weight="duotone" />}</span>
-      <p className="min-w-0 flex-1 text-[13px] text-sub">{state === "on" ? "Notifications are on for this device." : state === "off" ? "Turn on notifications to be alerted before a list is due." : msg[state]}</p>
-      {state === "off" && <Button icon={Bell} loading={busy} onClick={() => run(enable, "Notifications on")}>Turn on</Button>}
-      {state === "on" && <>
-        <Button variant="ghost" size="sm" loading={busy} onClick={() => run(async () => { const r = await test(); if (!r.sent) throw new Error("No device was reached; turn notifications off and on again"); }, "Test sent")}>Send test</Button>
-        <Button variant="quiet" size="sm" loading={busy} onClick={() => run(disable, "Notifications off")}>Turn off</Button>
-      </>}
-    </div>
-  );
-}
 
 function ListCard({ l, onEdit, onToggle, onDone, onDelete }: { l: JoggerList; onEdit: () => void; onToggle: (it: JoggerItem) => void; onDone: () => void; onDelete: () => void }) {
   const shopping = l.kind === "shopping";

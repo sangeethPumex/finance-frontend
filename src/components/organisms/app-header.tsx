@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CaretRight, MagnifyingGlass, SidebarSimple } from "@phosphor-icons/react";
+import { Bell, CaretRight, MagnifyingGlass, SidebarSimple } from "@phosphor-icons/react";
+import { useNudges } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import type { NavGroup } from "@/lib/nav";
 
@@ -12,6 +13,7 @@ export function AppHeader({ groups, collapsed, onToggle }: { groups: NavGroup[];
   const path = usePathname(), router = useRouter();
   const [q, setQ] = useState(""), [open, setOpen] = useState(false), [at, setAt] = useState(0);
   const box = useRef<HTMLInputElement>(null);
+  const unread = useNudges().data?.active.length ?? 0;
 
   const all = groups.flatMap((g) => g.links.map((l) => ({ ...l, group: g.title })));
   const here = all.filter((l) => (l.href === "/" ? path === "/" : path.startsWith(l.href))).sort((a, b) => b.href.length - a.href.length)[0];
@@ -78,6 +80,11 @@ export function AppHeader({ groups, collapsed, onToggle }: { groups: NavGroup[];
           </ul>
         )}
       </div>
+
+      <Link href="/copilot" aria-label={unread ? `Inbox, ${unread} waiting` : "Inbox"} className="relative grid size-9 shrink-0 place-items-center border border-line bg-surface text-muted transition-colors hover:text-ink">
+        <Bell size={16} />
+        {unread > 0 && <span aria-hidden className="num absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center bg-loss px-1 text-[10px] font-semibold leading-none text-white">{unread}</span>}
+      </Link>
     </header>
   );
 }

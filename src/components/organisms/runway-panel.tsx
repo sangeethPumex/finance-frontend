@@ -31,6 +31,7 @@ export function RunwayPanel({ cashPaise, worthPaise, burnPaise, netPaise, classN
   const cash = days(cashPaise, burn), total = days(pool, burn), t = tone(cash), h = span(cash);
   const cashShare = total > 0 ? Math.min(cash / total, 1) * 100 : 100;
   const changed = burn !== burnPaise;
+  const zero = new Date(Date.now() + cash * 864e5).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
   return (
     <Card title="Financial runway" icon={Timer} className={className}>
@@ -79,7 +80,7 @@ export function RunwayPanel({ cashPaise, worthPaise, burnPaise, netPaise, classN
 
       <div className={cn("mt-6 border-l-[3px] bg-tint px-4 py-3.5", netPaise < 0 ? "border-loss" : "border-gain")}>
         <p className="text-[15px] leading-relaxed text-ink">
-          If your income stopped today, your cash would last <b className={cn("num font-semibold", toneText[t])}>{words(cash)}</b>.
+          If your income stopped today, your cash would last <b className={cn("num font-semibold", toneText[t])}>{words(cash)}</b>, until <b className="num font-semibold">{zero}</b>.
           Selling your investments too stretches that to <b className="num font-semibold text-info">{words(total)}</b>.{" "}
           {netPaise < 0
             ? <>Right now you spend <b className="num font-semibold text-loss">{inr(-netPaise)}</b> more each month than you earn.</>

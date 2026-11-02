@@ -5,9 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { CalendarCheck, CreditCard, Gauge, Plus, Wallet } from "@phosphor-icons/react";
 import { Button } from "@/components/atoms";
 import { EmptyState, RowSkeleton, StatCard, StatSkeleton } from "@/components/molecules";
-import { CardForm, CardTile, dueStatus } from "@/components/organisms";
+import { CardAdviceCard, CardForm, CardTile, dueStatus } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
-import { api, type Card, type CardInput, useAct, useCards } from "@/lib/api";
+import { api, type Card, type CardInput, useAct, useCards, useCopilot } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { shortDate } from "@/lib/dates";
 import { inr } from "@/lib/money";
@@ -15,6 +15,7 @@ import { inr } from "@/lib/money";
 function Cards() {
   const open = useSearchParams().get("card"); // from a transaction's card link: open that card's details
   const q = useCards();
+  const advice = useCopilot().data?.cardAdvice ?? [];
   const act = useAct();
   const [saving, setSaving] = useState(false);
   // undefined = closed, null = adding, Card = editing
@@ -62,6 +63,8 @@ function Cards() {
           </ul>
         </section>
       )}
+
+      <CardAdviceCard items={advice} className="mt-6" />
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         {q.isLoading ? (

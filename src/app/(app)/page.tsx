@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight, Calendar, CalendarCheck, CalendarDots, ChartLineUp, Gauge, PiggyBank, Sparkle, SquaresFour, Wallet } from "@phosphor-icons/react";
+import { ArrowDownLeft, ArrowUpRight, Calendar, CalendarCheck, CalendarDots, ChartLineUp, PiggyBank, Sparkle, SquaresFour, Wallet } from "@phosphor-icons/react";
 import { Button } from "@/components/atoms";
 import { Card, Meter, PanelSkeleton, StatCard, StatSkeleton, Tabs } from "@/components/molecules";
-import { AccountBalances, CashflowPanel, NetWorthChart, PositionPanel, RecentActivity, RunwayPanel, SpendingHeatmap } from "@/components/organisms";
+import { AccountBalances, CashflowPanel, NetWorthChart, NowCard, PositionPanel, RecentActivity, RunwayPanel, SpendingHeatmap, WeekAhead } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
-import { type PeriodKey, fetchAdvice, useAccounts, useBudgets, useDashboard } from "@/lib/api";
+import { type PeriodKey, fetchAdvice, useAccounts, useBudgets, useCopilot, useDashboard } from "@/lib/api";
 import { inr } from "@/lib/money";
 
 const PERIODS: { value: PeriodKey; label: string }[] = [
@@ -24,7 +24,7 @@ const Section = ({ n, title, children }: { n: string; title: string; children: R
 export default function Dashboard() {
   const [period, setPeriod] = useState<PeriodKey>("month");
   const [custom, setCustom] = useState({ from: "", to: "" });
-  const dash = useDashboard(period, custom.from, custom.to), accounts = useAccounts(), budgets = useBudgets();
+  const dash = useDashboard(period, custom.from, custom.to), accounts = useAccounts(), budgets = useBudgets(), copilot = useCopilot().data;
   const [advice, setAdvice] = useState<{ text?: string; busy?: boolean; error?: string }>({});
 
   const d = dash.data;
@@ -79,6 +79,8 @@ export default function Dashboard() {
         </Link>
       )}
 
+      {copilot && <NowCard o={copilot} className="mt-2" />}
+
       <Section n="01" title="Financial position">
         <PositionPanel p={p} />
       </Section>
@@ -105,7 +107,7 @@ export default function Dashboard() {
 
       <Section n="04" title="Upcoming commitments">
         <RunwayPanel className="mb-4" cashPaise={p.cashPaise} worthPaise={p.netWorthPaise} burnPaise={u.stopBurnPaise} netPaise={u.monthlyNetPaise} />
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Next Salary" icon={CalendarCheck} href="/profile" tone={u.salaryPaise > 0 ? "good" : "neutral"} value={u.salaryPaise > 0 ? `${u.daysToSalary} days` : "–"}
             sub={u.salaryPaise > 0 ? `${inr(u.salaryPaise)} expected on the ${u.salaryDay}th. Change in About Me` : "Set salary in About Me"} />
           <StatCard label="SIPs" icon={ChartLineUp} href="/funds" tone={u.nextSip && u.nextSip.days <= 3 ? "warn" : "info"} value={u.sipMonthlyPaise > 0 ? `${inr(u.sipMonthlyPaise)} / mo` : "–"}
@@ -116,11 +118,8 @@ export default function Dashboard() {
           </StatCard>
           <StatCard label="Mandates · 90 days" icon={CalendarDots} href="/mandates" tone={d.mandates.due.length ? "warn" : "neutral"} value={d.mandates.due.length ? inr(d.mandates.next90Paise) : "–"}
             sub={d.mandates.due.length ? `${d.mandates.due.slice(0, 3).map((o) => `${o.name} in ${o.days}d`).join(" · ")}${d.mandates.due.length > 3 ? ` · +${d.mandates.due.length - 3} more` : ""}` : "Add insurance, fees and other must-pay items"} />
-          <StatCard label="Today's Budget" icon={Gauge} tone={u.dailyTone} value={u.dailyTargetPaise > 0 ? inr(u.dailyTargetPaise) : "–"}
-            sub={u.dailyTargetPaise > 0 ? `Spent ${inr(u.todaySpentPaise)} today. (Cash − buffer − EMIs and SIPs due) ÷ ${u.daysToSalary} days to salary` : "Set salary and buffer in About Me"}>
-            {u.dailyTargetPaise > 0 && <Meter ratio={u.todaySpentPaise / u.dailyTargetPaise} tone={u.dailyTone} />}
-          </StatCard>
         </div>
+        {copilot && <WeekAhead w={copilot.week} className="mt-4" />}
       </Section>
 
       <Section n="05" title="Financial pulse">

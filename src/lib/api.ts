@@ -116,7 +116,7 @@ export const useViews = list<SavedView>("views");
 
 export type Recurring = {
   name: string; vendor_id?: string; category_id?: string; cadence: "weekly" | "monthly" | "quarterly" | "yearly";
-  amount_paise: number; monthly_paise: number; count: number; last_at: string; next_at: string; days_until: number; status: "active" | "lapsed";
+  amount_paise: number; last_paise: number; monthly_paise: number; count: number; last_at: string; next_at: string; days_until: number; status: "active" | "lapsed";
 };
 export type Anomaly = { txn_id: string; vendor: string; at: string; paise: number; usual_paise: number; ratio: number; kind: "spike" | "new_vendor" };
 export type Bucket = { paise: number; count: number };
@@ -146,9 +146,9 @@ export const useTransactionsPage = (f: TxnFilter, page: number, limit = 50, sort
   });
 
 /** What a vendor or category change can alter: names and categories show on transactions, and spend totals follow categories. */
-export const NAME_KEYS = ["vendors", "categories", "transactions", "summary", "budgets", "dashboard", "insights", "accounts"];
+export const NAME_KEYS = ["vendors", "categories", "transactions", "summary", "budgets", "dashboard", "insights", "accounts", "copilot"];
 /** What a change to one transaction can alter (not balances: a category never moves money). */
-export const TXN_KEYS = ["transactions", "summary", "budgets", "dashboard", "insights", "account", "cards"];
+export const TXN_KEYS = ["transactions", "summary", "budgets", "dashboard", "insights", "account", "cards", "copilot"];
 
 /**
  * Runs a write, then refetches what it can have changed. keys are query-key prefixes; leave them out to refetch everything (accounts
@@ -366,3 +366,36 @@ export type JoggerList = { id: string; title: string; kind: JoggerKind; note?: s
 /** Body of a create or update; remind_at is an ISO timestamp. Items without an id are new. */
 export type JoggerInput = { title: string; kind: JoggerKind; note?: string; remind_at: string; lead_mins: number[]; items: { id?: string; name: string; est_paise: number; bought?: boolean }[] };
 export const useJogger = () => useQuery({ queryKey: ["jogger"], queryFn: () => api<JoggerList[]>("/jogger"), refetchInterval: 60_000 });
+
+// ---- Copilot: what to do now. Computed by the backend; money here is paise, runway is days ----
+export type CopilotEvent = { offset: number; date: string; name: string; paise: number; kind: "salary" | "mandate" | "emi" | "sip" | "card" | "renewal" };
+export type Safe = {
+  todayPaise: number; spentPaise: number; leftPaise: number; tomorrowPaise: number; ratio: number; tone: "good" | "warn" | "bad";
+  cashPaise: number; committedPaise: number; bufferPaise: number; daysToSalary: number; salarySet: boolean; committed: CopilotEvent[];
+};
+export type Week = { days: number; inPaise: number; outPaise: number; events: CopilotEvent[]; lowestPaise: number; lowestDate: string; aboveBuffer: boolean; safePerDayPaise: number; priciest?: string };
+export type Advice = { kind: "timing" | "utilisation" | "payoff"; card: string; title: string; body: string; stakePaise: number };
+export type Subscription = { name: string; cadence: string; amountPaise: number; yearlyPaise: number; runwayDaysPerMonth: number; raisedPaise?: number; daysUntil: number };
+export type Nudge = { id: string; kind: string; title: string; body: string; tone: "good" | "warn" | "bad" | "info"; actionLabel?: string; actionHref?: string; ref?: string; stakePaise: number; state: "new" | "dismissed" | "acted"; createdAt: string };
+export type CopilotOverview = {
+  safe: Safe;
+  runway: { days: number; burnDailyPaise: number; zeroDate?: string; goalDays: number; recapDays: number; recapText?: string };
+  week: Week;
+  habits: { noSpendStreak: number; underStreak: number; priciestDay?: string; weekendRatio: number; afterSalaryRatio: number; notes: string[] };
+  confidence: { accountsSeen: number; accountsTotal: number; notes: string[] };
+  cardAdvice: Advice[]; subscriptions: Subscription[]; top?: Nudge; owedPaise: number;
+};
+export type CheckInput = { name?: string; amountPaise: number; need?: boolean; uses?: number; replacesPaise?: number; onCard?: boolean; date?: string };
+export type CheckResult = {
+  name?: string; amountPaise: number; verdict: "buy" | "wait" | "skip"; headline: string; runwayBefore: number; runwayAfter: number; runwayCost: number;
+  safeBeforePaise: number; safeAfterPaise: number; planCost: string; earliest?: string; reasons: string[];
+  scenarios: { label: string; date: string; runwayAfter: number; safePerDayPaise: number; uncovered?: string; interestPaise: number; passes: boolean }[];
+  coolOff: string; savePerDayPaise: number; saveBy: string; costPerUsePaise?: number; paybackMonths?: number;
+  emi: { months: number; ratePct: number; feePct: number; extraPaise: number; monthlyPaise: number };
+};
+export type Want = { id: string; name: string; amountPaise: number; need: boolean; uses: number; link?: string; remindAt?: string; status: "parked" | "bought" | "dropped"; boughtAt?: string; glad?: boolean; createdAt: string; check?: CheckResult };
+export type Inbox = { active: Nudge[]; history: Nudge[]; muted: { kind: string; label: string; auto?: boolean }[] };
+export const useCopilot = () => useQuery({ queryKey: ["copilot"], queryFn: () => api<CopilotOverview>("/copilot"), staleTime: 60_000 });
+export const useNudges = () => useQuery({ queryKey: ["copilot-nudges"], queryFn: () => api<Inbox>("/copilot/nudges"), refetchInterval: 5 * 60_000 });
+export const useCopilotWants = () => useQuery({ queryKey: ["copilot-wants"], queryFn: () => api<Want[]>("/copilot/wants") });
+export const useCopilotCheck = () => useMutation({ mutationFn: (body: CheckInput) => api<CheckResult>("/copilot/check", { method: "POST", body }) });

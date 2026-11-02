@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowDownLeft, ArrowsLeftRight, ArrowUpRight, ArrowUUpLeft, CalendarCheck, CreditCard, HandCoins, Money, PencilSimple, SplitHorizontal, Trash, type Icon } from "@phosphor-icons/react";
-import { api, TXN_KEYS, useAct, useTxnCache, useVendors, useWrite, type Account, type Card, type Category, type Txn } from "@/lib/api";
+import { api, TXN_KEYS, useAct, useTxnCache, useCopilot, useVendors, useWrite, type Account, type Card, type Category, type Txn } from "@/lib/api";
 import { shortDateTime } from "@/lib/dates";
 import { inr } from "@/lib/money";
 import { cn } from "@/lib/cn";
@@ -105,6 +105,7 @@ export type TransactionsTableProps = {
 export function TransactionsTable({ txns, accounts, cards, categories, loading, emptyText = "No transactions yet", sort, onSort }: TransactionsTableProps) {
   const [owing, setOwing] = useState<Txn | null>(null);
   const [splitting, setSplitting] = useState<Txn | null>(null);
+  const burn = useCopilot().data?.runway.burnDailyPaise ?? 0;
   const vendors = useVendors().data;
   const names = useMemo(() => new Map((vendors ?? []).map((v) => [v.id, v.name])), [vendors]);
   // A saved vendor's name beats the raw UPI id / SMS text.
@@ -127,7 +128,7 @@ export function TransactionsTable({ txns, accounts, cards, categories, loading, 
         : <CategoryCell t={t} categories={categories} cards={cards} onSplit={() => setSplitting(t)} />,
     },
     { key: "account", header: "Account", cell: (t) => <span className="text-muted">{sourceLabel(t, accounts, cards)}</span> },
-    { key: "amount", header: "Amount", sortKey: "amount", align: "right", cell: (t) => <span className={cn("num font-medium", isDebit(t) === false ? "text-gain" : isDebit(t) ? "text-loss" : "text-sub")}>{signed(t) > 0 ? "+" : ""}{inr(signed(t))}</span> },
+    { key: "amount", header: "Amount", sortKey: "amount", align: "right", cell: (t) => <span title={isDebit(t) && burn > 0 ? `${inr(t.amount_paise)} = ${(t.amount_paise / burn).toFixed(1)} days of runway` : undefined} className={cn("num font-medium", isDebit(t) === false ? "text-gain" : isDebit(t) ? "text-loss" : "text-sub")}>{signed(t) > 0 ? "+" : ""}{inr(signed(t))}</span> },
     {
       key: "owed",
       header: "",

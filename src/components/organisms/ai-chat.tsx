@@ -6,10 +6,12 @@ import { ArrowClockwise, ArrowRight, Check, ClockCounterClockwise, Copy, PaperPl
 import { cn } from "@/lib/cn";
 import { inr } from "@/lib/money";
 import { Button } from "../atoms";
+import { BarRow } from "../molecules";
 
 type Source = "recorded" | "estimated" | "told";
 type Metric = { label: string; rupees?: number; text?: string; source: Source; note?: string };
-type Answer = { conclusion: string; metrics: Metric[]; insights: string[]; links: { label: string; href: string }[] };
+type Chart = { kind: "bar" | "line"; title: string; points: { label: string; rupees: number }[] };
+type Answer = { conclusion: string; metrics: Metric[]; chart?: Chart; insights: string[]; links: { label: string; href: string }[] };
 // content is what the model sees on later turns (an answer's conclusion); answer is what is drawn.
 type Msg = { role: "user" | "assistant"; content: string; answer?: Answer };
 type ChatItem = { id: string; title: string; updatedAt: string };
@@ -20,7 +22,32 @@ const SOURCE: Record<Source, { label: string; dot: string }> = {
   told: { label: "You told me", dot: "bg-sky-400" },
 };
 
-const SUGGESTIONS = ["How am I doing this month?", "Where is most of my money going?", "Can I afford a ₹20,000 purchase this week?", "How do I improve my savings rate?"];
+const SUGGESTIONS = ["How am I doing this month?", "What is safe to spend today?", "Can I afford a ₹20,000 purchase this week?", "What if I wait a month to buy a ₹20,000 phone?"];
+
+/** Bars compare things side by side; a line follows change over time. Plain SVG/CSS, no chart library. */
+function ChartView({ c }: { c: Chart }) {
+  const pts = c.points, max = Math.max(...pts.map((p) => Math.abs(p.rupees)), 1);
+  const lo = Math.min(0, ...pts.map((p) => p.rupees)), hi = Math.max(0, ...pts.map((p) => p.rupees));
+  const W = 320, H = 110, x = (i: number) => 8 + (i * (W - 16)) / (pts.length - 1), y = (v: number) => H - 8 - ((v - lo) / (hi - lo || 1)) * (H - 16);
+  return (
+    <figure className="rounded-xl border border-line bg-surface p-3">
+      {c.title && <figcaption className="mb-2 text-[12px] font-medium text-muted">{c.title}</figcaption>}
+      {c.kind === "bar" ? (
+        <div className="space-y-2.5 text-[13px] text-ink">
+          {pts.map((p, i) => <BarRow key={i} label={p.label} value={inr(Math.round(p.rupees * 100))} ratio={Math.abs(p.rupees) / max} />)}
+        </div>
+      ) : (
+        <>
+          <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={c.title || "Trend"} className="h-28 w-full overflow-visible">
+            <polyline fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" className="text-orange-500" points={pts.map((p, i) => `${x(i)},${y(p.rupees)}`).join(" ")} />
+            {pts.map((p, i) => <circle key={i} cx={x(i)} cy={y(p.rupees)} r="3" className="fill-orange-500"><title>{`${p.label}: ${inr(Math.round(p.rupees * 100))}`}</title></circle>)}
+          </svg>
+          <div className="mt-1 flex justify-between text-[11px] text-muted"><span>{pts[0].label}</span><span>{pts.at(-1)!.label}</span></div>
+        </>
+      )}
+    </figure>
+  );
+}
 
 function AnswerView({ a }: { a: Answer }) {
   return (
@@ -38,6 +65,7 @@ function AnswerView({ a }: { a: Answer }) {
           ))}
         </div>
       )}
+      {a.chart && <ChartView c={a.chart} />}
       {a.insights.length > 0 && <ul className="list-disc space-y-1 pl-5 text-[14px] leading-relaxed">{a.insights.map((t, i) => <li key={i}>{t}</li>)}</ul>}
       {a.links.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -65,6 +93,8 @@ export function AiChat() {
   const [past, setPast] = useState<ChatItem[] | null>(null); // null = history panel closed
   useEffect(() => { const el = scroller.current; if (el && stick.current) el.scrollTop = el.scrollHeight; }, [msgs]);
   useEffect(() => () => { abort.current?.abort(); }, []);
+  // A question handed over from another page is filled in, not sent: each send is a paid model call.
+  useEffect(() => { const q = new URLSearchParams(window.location.search).get("q"); if (q) setInput(q.slice(0, 500)); }, []);
 
   async function send(text: string, base: Msg[] = msgs) {
     const q = text.trim();
