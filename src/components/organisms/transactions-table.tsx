@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowDownLeft, ArrowsLeftRight, ArrowUpRight, ArrowUUpLeft, CalendarCheck, CreditCard, HandCoins, Money, PencilSimple, SplitHorizontal, type Icon } from "@phosphor-icons/react";
-import { api, TXN_KEYS, useTxnCache, useVendors, useWrite, type Account, type Card, type Category, type Txn } from "@/lib/api";
+import { ArrowDownLeft, ArrowsLeftRight, ArrowUpRight, ArrowUUpLeft, CalendarCheck, CreditCard, HandCoins, Money, PencilSimple, SplitHorizontal, Trash, type Icon } from "@phosphor-icons/react";
+import { api, TXN_KEYS, useAct, useTxnCache, useVendors, useWrite, type Account, type Card, type Category, type Txn } from "@/lib/api";
 import { shortDateTime } from "@/lib/dates";
 import { inr } from "@/lib/money";
 import { cn } from "@/lib/cn";
@@ -109,6 +109,8 @@ export function TransactionsTable({ txns, accounts, cards, categories, loading, 
   const names = useMemo(() => new Map((vendors ?? []).map((v) => [v.id, v.name])), [vendors]);
   // A saved vendor's name beats the raw UPI id / SMS text.
   const nameOf = (t: Txn) => (t.vendor_id && names.get(t.vendor_id)) || vendorLabel(t);
+  const act = useAct(TXN_KEYS);
+  const remove = (t: Txn) => window.confirm(`Delete this ${inr(t.amount_paise)} transaction? This can't be undone.`) && act(() => api(`/transactions/${t.id}`, { method: "DELETE" }), { ok: "Transaction deleted" });
   const columns: Column<Txn>[] = [
     { key: "date", header: "Date", sortKey: "date", cell: (t) => <span className="whitespace-nowrap text-muted">{shortDateTime(t.received_at ?? t.occurred_at)}</span> },
     {
@@ -137,6 +139,11 @@ export function TransactionsTable({ txns, accounts, cards, categories, loading, 
             {!t.splits?.length && <button type="button" aria-label="Mark as paid for someone" title="Paid for someone? Track what they owe you" onClick={() => setOwing(t)} className="text-muted hover:text-ink"><HandCoins size={16} /></button>}
           </span>
         ) : null,
+    },
+    {
+      key: "delete",
+      header: "",
+      cell: (t) => <button type="button" aria-label="Delete transaction" title="Delete (e.g. a duplicate)" onClick={() => remove(t)} className="text-muted hover:text-loss"><Trash size={16} /></button>,
     },
   ];
   return (
