@@ -93,6 +93,9 @@ export const useAccount = (id: string) => useQuery({ queryKey: ["account", id], 
 export const useAccountTxns = (id: string) => useQuery({ queryKey: ["transactions", "account", id], queryFn: () => api<Txn[]>(`/transactions?limit=200&account_id=${id}`) });
 export const useCategories = list<Category>("categories");
 export const useVendors = list<Vendor>("vendors");
+/** Money someone owes that no bank payment backs (a GPay group, cash lent). paid_at is set once it is paid. */
+export type Debt = { id: string; person: string; group?: string; source: string; note?: string; amount_paise: number; paid_at?: string; created_at: string };
+export const useDebts = list<Debt>("debts");
 
 /** A paged list request (POST .../search). Filter keys are per list; blanks are dropped before sending. */
 export type Sort = { field: string; dir: "asc" | "desc" };
@@ -292,11 +295,15 @@ export type Mandate = Required<Pick<MandateInput, "name" | "amount_paise" | "fre
 export type MandateOcc = { id: string; name: string; paise: number; date: string; days: number };
 export type MandatePlan = { items: Mandate[]; calendar: MandateOcc[]; next30_paise: number; next90_paise: number; year_paise: number; set_aside_paise: number };
 export type MandateSuggestion = Omit<MandateInput, "account_id" | "category_id"> & { count: number };
-/** Parses every message still waiting or failed, one request each; stops at the first failure and throws the backend's raw error. Returns how many parsed. */
+/** Parses every message still waiting or failed, one request each; a failure doesn't stop the rest, and the first error is thrown at the end. Returns how many parsed. */
 export async function parseUnparsed() {
   const ids = await api<string[]>("/raw-transactions/unparsed");
-  for (const id of ids) await api(`/raw-transactions/${id}/parse`, { method: "POST" });
-  return ids.length;
+  let done = 0, firstErr: unknown;
+  for (const id of ids) {
+    try { await api(`/raw-transactions/${id}/parse`, { method: "POST" }); done++; } catch (e) { firstErr ??= e; }
+  }
+  if (firstErr) throw new Error(`Parsed ${done} of ${ids.length}: ${firstErr instanceof Error ? firstErr.message : firstErr}`);
+  return done;
 }
 export const useMandates = () => useQuery({ queryKey: ["mandates"], queryFn: () => api<MandatePlan>("/mandates") });
 export const useMandateSuggestions = () => useQuery({ queryKey: ["mandate-suggestions"], queryFn: () => api<MandateSuggestion[]>("/mandates/suggestions") });

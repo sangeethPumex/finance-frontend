@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Check, HandCoins } from "@phosphor-icons/react";
+import { Check, HandCoins, Plus, Trash } from "@phosphor-icons/react";
 import { Badge, Button, Input } from "@/components/atoms";
 import { Card, EmptyState, ListRow, RowList, RowSkeleton, StatCard, StatSkeleton } from "@/components/molecules";
+import { DebtDialog } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
-import { api, type Txn, useAct, useTransactions } from "@/lib/api";
+import { api, type Debt, type Txn, useAct, useDebts, useTransactions } from "@/lib/api";
 import { shortDateTime } from "@/lib/dates";
 import { inr, rupeesToPaise } from "@/lib/money";
 import { vendorLabel } from "@/lib/txn";
@@ -34,8 +35,30 @@ function Row({ t }: { t: Txn }) {
   );
 }
 
+/** One debt added by hand: mark it paid, take that back, or delete it. */
+function DebtRow({ d }: { d: Debt }) {
+  const act = useAct(["debts"]);
+  return (
+    <ListRow title={d.person}
+      subtitle={`${shortDateTime(d.created_at)}${d.note ? ` · ${d.note}` : ""}${d.paid_at ? ` · paid ${shortDateTime(d.paid_at)}` : ""}`}
+      trailing={(
+        <span className="flex items-center gap-2">
+          <span className={d.paid_at ? "text-muted line-through" : "text-warn"}>{inr(d.amount_paise)}</span>
+          <Button size="sm" variant="ghost" icon={Check} onClick={() => act(() => api(`/debts/${d.id}`, { method: "PATCH", body: { paid: !d.paid_at } }), { ok: d.paid_at ? "Marked unpaid" : "Marked paid" })}>{d.paid_at ? "Undo" : "Paid"}</Button>
+          <Button size="sm" variant="ghost" icon={Trash} aria-label="Delete" onClick={() => act(() => api(`/debts/${d.id}`, { method: "DELETE" }), { ok: "Deleted" })} />
+        </span>
+      )} />
+  );
+}
+
 export default function Owed() {
   const q = useTransactions({ owed: true }, 1000);
+  const dq = useDebts();
+  const [adding, setAdding] = useState(false);
+  const debts = dq.data ?? [];
+  const byApp = new Map<string, Debt[]>();
+  for (const d of debts) byApp.set(d.group ? `${d.group} · ${d.source}` : d.source, [...(byApp.get(d.group ? `${d.group} · ${d.source}` : d.source) ?? []), d]);
+  const debtLeft = debts.reduce((a, d) => a + (d.paid_at ? 0 : d.amount_paise), 0);
   const rows = q.data ?? [];
   const people = new Map<string, Txn[]>();
   for (const t of rows) {
@@ -43,10 +66,10 @@ export default function Owed() {
     people.set(k, [...(people.get(k) ?? []), t]);
   }
   const groups = [...people.values()].map((ts) => ({ name: ts[0].owed_from ?? "", ts, left: ts.reduce((a, t) => a + left(t), 0) })).sort((a, b) => b.left - a.left);
-  const total = groups.reduce((a, g) => a + g.left, 0);
+  const total = groups.reduce((a, g) => a + g.left, 0) + debtLeft;
 
   return (
-    <PageLayout title="Owed to Me" icon={HandCoins} error={q.error} description="Payments you made for others. The part they owe back is not counted as your spending">
+    <PageLayout title="Owed to Me" icon={HandCoins} error={q.error ?? dq.error} action={<Button icon={Plus} onClick={() => setAdding(true)}>Add</Button>} description="Payments you made for others, and money people owe you that you add by hand. The part they owe back is not counted as your spending">
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
         {q.isLoading ? [0, 1].map((i) => <StatSkeleton key={i} />) : <>
           <StatCard label="Still to come back" value={inr(total)} tone={total > 0 ? "warn" : "good"} />
@@ -55,14 +78,23 @@ export default function Owed() {
       </div>
 
       <div className="mt-4 space-y-4">
-        {q.isLoading ? <RowSkeleton /> : groups.length === 0 ? (
-          <div className="border border-line"><EmptyState icon={HandCoins}>Paid for a friend? On the Transactions page, click the coin icon on that payment to track what they owe you.</EmptyState></div>
+        {[...byApp].map(([name, ds]) => {
+          const left = ds.reduce((a, d) => a + (d.paid_at ? 0 : d.amount_paise), 0);
+          return (
+            <Card key={name} title={name} icon={HandCoins} action={<span className={left > 0 ? "num text-[13px] font-semibold text-warn" : "text-[12px] text-gain"}>{left > 0 ? `${inr(left)} to come` : "All paid"}</span>}>
+              <RowList>{ds.map((d) => <DebtRow key={d.id} d={d} />)}</RowList>
+            </Card>
+          );
+        })}
+        {q.isLoading || dq.isLoading ? <RowSkeleton /> : groups.length === 0 && debts.length === 0 ? (
+          <div className="border border-line"><EmptyState icon={HandCoins}>Paid for a friend? On the Transactions page, click the coin icon on that payment to track what they owe you. Or press Add for a GPay group or cash.</EmptyState></div>
         ) : groups.map((g) => (
           <Card key={g.name.toLowerCase()} title={g.name} icon={HandCoins} action={<span className={g.left > 0 ? "num text-[13px] font-semibold text-warn" : "text-[12px] text-gain"}>{g.left > 0 ? `${inr(g.left)} to come` : "All settled"}</span>}>
             <RowList>{g.ts.map((t) => <Row key={t.id} t={t} />)}</RowList>
           </Card>
         ))}
       </div>
+      {adding && <DebtDialog onClose={() => setAdding(false)} />}
     </PageLayout>
   );
 }

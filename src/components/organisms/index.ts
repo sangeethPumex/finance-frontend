@@ -17,6 +17,7 @@ export * from "./mobile-nav";
 export * from "./transactions-table";
 export * from "./transactions-filters";
 export * from "./owed-dialog";
+export * from "./debt-dialog";
 export * from "./split-dialog";
 export * from "./merge-vendor-dialog";
 export * from "./insights-panels";
