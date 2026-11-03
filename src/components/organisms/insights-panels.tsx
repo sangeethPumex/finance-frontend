@@ -76,6 +76,11 @@ export function PaceCard({ pace }: { pace: Pace }) {
   const { month_paise: now, prev_span_paise: prev } = pace;
   return (
     <Card title="This month's pace" icon={ChartLineUp}>
+      <p className="mb-4 text-[14px] leading-relaxed">
+        By day {pace.day} last month you had spent <b className="num">{inr(prev)}</b>. This month you have spent <b className="num">{inr(now)}</b>
+        {now === prev ? ", exactly the same." : <>, which is <b className={`num ${now > prev ? "text-down" : "text-up"}`}>{inr(Math.abs(now - prev))} {now > prev ? "more" : "less"}</b>.</>}
+        {pace.prev_month_paise > 0 && <> At this rate the month ends around <b className="num">{inr(pace.projected_paise)}</b>, {pace.projected_paise > pace.prev_month_paise ? "above" : "below"} last month's {inr(pace.prev_month_paise)}.</>}
+      </p>
       <div className="grid grid-cols-3 gap-4">
         <div><div className="text-[12px] text-muted">Spent so far</div><div className="num mt-1 text-[22px] font-semibold leading-none">{inr(now)}</div>
           <div className={`mt-1.5 text-[11px] ${now > prev ? "text-down" : "text-up"}`}>{prev > 0 || now > 0 ? delta(now, prev) : ""}</div></div>
@@ -96,7 +101,10 @@ export function MoversCard({ items }: { items: Mover[] }) {
           {items.map((m) => (
             <div key={m.name}>
               <BarRow label={m.name} value={inr(m.paise)} ratio={m.paise / max} />
-              <div className={`mt-1 text-[11px] ${m.paise > m.prev_paise ? "text-down" : "text-up"}`}>{delta(m.paise, m.prev_paise)}</div>
+              <div className="mt-1 h-1 bg-tint"><div className="h-1 bg-muted/50" style={{ width: `${(m.prev_paise / max) * 100}%` }} /></div>
+              <div className="mt-1 text-[11px] text-muted">
+                Same days last month {inr(m.prev_paise)} · <span className={m.paise > m.prev_paise ? "text-down" : "text-up"}>{m.paise === m.prev_paise ? "no change" : `${inr(Math.abs(m.paise - m.prev_paise))} ${m.paise > m.prev_paise ? "more" : "less"}`}</span>
+              </div>
             </div>
           ))}
         </div>

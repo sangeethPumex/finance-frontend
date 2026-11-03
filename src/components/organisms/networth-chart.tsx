@@ -8,11 +8,25 @@ import { inr } from "@/lib/money";
 type View = "networth" | "assets" | "cash";
 const VIEWS: { value: View; label: string }[] = [{ value: "networth", label: "Net worth" }, { value: "assets", label: "Net worth vs owed" }, { value: "cash", label: "Cash" }];
 const RANGES: NWRange[] = ["1m", "3m", "6m", "1y"];
-// Black line, grey dashes. The only colour is red, on the owed line.
-const SERIES: Record<View, { label: string; get: (p: NWPoint) => number | undefined; stroke: string; fill: string }[]> = {
-  networth: [{ label: "Net worth", get: (p) => p.netWorthPaise, stroke: "stroke-ink", fill: "fill-ink" }],
-  assets: [{ label: "Net worth", get: (p) => p.netWorthPaise, stroke: "stroke-ink", fill: "fill-ink" }, { label: "Owed", get: (p) => p.owedPaise, stroke: "stroke-loss", fill: "fill-loss" }],
-  cash: [{ label: "Cash", get: (p) => p.cashPaise, stroke: "stroke-ink", fill: "fill-ink" }],
+// Palette is black, red, green, yellow, purple only: net worth black, owed red, cash green, projection purple, today's marker yellow.
+const INK = "#1c1c1b", RED = "#c62828", GREEN = "#1f8a5b", YELLOW = "#d9a406", PURPLE = "#7c3aed";
+const SERIES: Record<View, { label: string; get: (p: NWPoint) => number | undefined; color: string }[]> = {
+  networth: [{ label: "Net worth", get: (p) => p.netWorthPaise, color: INK }],
+  assets: [{ label: "Net worth", get: (p) => p.netWorthPaise, color: INK }, { label: "Owed", get: (p) => p.owedPaise, color: RED }],
+  cash: [{ label: "Cash", get: (p) => p.cashPaise, color: GREEN }],
+};
+/** Monotone cubic through the points: smooth, but never overshoots a flat stretch into a bump. */
+const smooth = (pts: number[][]) => {
+  const n = pts.length;
+  if (n < 3) return pts.map(([px, py], i) => `${i ? "L" : "M"}${px.toFixed(1)},${py.toFixed(1)}`).join("");
+  const dx = pts.slice(1).map((p, i) => p[0] - pts[i][0]), sl = pts.slice(1).map((p, i) => (dx[i] ? (p[1] - pts[i][1]) / dx[i] : 0));
+  const m = pts.map((_, i) => (i === 0 ? sl[0] : i === n - 1 ? sl[n - 2] : sl[i - 1] * sl[i] <= 0 ? 0 : (sl[i - 1] + sl[i]) / 2));
+  for (let i = 0; i < n - 1; i++) {
+    if (sl[i] === 0) { m[i] = m[i + 1] = 0; continue; }
+    const a = m[i] / sl[i], b = m[i + 1] / sl[i], h = Math.hypot(a, b);
+    if (h > 3) { m[i] = (3 * a / h) * sl[i]; m[i + 1] = (3 * b / h) * sl[i]; }
+  }
+  return pts.slice(1).reduce((d, p, i) => `${d}C${(pts[i][0] + dx[i] / 3).toFixed(1)},${(pts[i][1] + m[i] * dx[i] / 3).toFixed(1)} ${(p[0] - dx[i] / 3).toFixed(1)},${(p[1] - m[i + 1] * dx[i] / 3).toFixed(1)} ${p[0].toFixed(1)},${p[1].toFixed(1)}`, `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`);
 };
 const PAD = { l: 8, r: 64, t: 24, b: 22 };
 const day = (d: string) => new Date(`${d}T00:00:00Z`).getTime();
@@ -49,7 +63,7 @@ export function NetWorthChart() {
   const y = (v: number) => PAD.t + (1 - (v - lo) / (hi - lo)) * (H - PAD.t - PAD.b);
   // A hand-entered month has no cash or owed figure, so those lines skip it rather than draw a zero.
   const path = (pts: NWPoint[], get: (p: NWPoint) => number | undefined) =>
-    pts.flatMap((p) => { const v = get(p); return v === undefined ? [] : [[x(day(p.date)), y(v)]]; }).map(([px, py], i) => `${i ? "L" : "M"}${px.toFixed(1)},${py.toFixed(1)}`).join("");
+    smooth(pts.flatMap((p) => { const v = get(p); return v === undefined ? [] : [[x(day(p.date)), y(v)]]; }));
   const shown = hover === undefined ? cur : all[hover];
   const projected = hover !== undefined && hover >= hist.length;
   const end = (get: (p: NWPoint) => number | undefined) => { const p = proj[proj.length - 1]; return p && get(p) !== undefined ? { x: x(day(p.date)), y: y(get(p)!), v: get(p)! } : undefined; };
@@ -77,15 +91,17 @@ export function NetWorthChart() {
         {series.map((s) => {
           const e = end(s.get);
           return (
-            <g key={s.label} fill="none" strokeWidth={1.25}>
-              <path d={path(hist, s.get)} className={s.stroke} />
-              <path d={path([cur, ...proj], s.get)} className="stroke-muted" strokeDasharray="2 4" />
-              {hist.map((p) => s.get(p) !== undefined && <circle key={p.date} cx={x(day(p.date))} cy={y(s.get(p)!)} r={2.5} stroke="none" className={s.fill} />)}
-              {e && <text x={e.x + 8} y={e.y + 4} stroke="none" className="fill-muted text-[11px]">{lakh(e.v)}</text>}
+            <g key={s.label} fill="none" strokeWidth={2}>
+              <defs><linearGradient id={`nw-${s.label}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={s.color} stopOpacity={0.18} /><stop offset="1" stopColor={s.color} stopOpacity={0} /></linearGradient></defs>
+              <path d={`${path(hist, s.get)}L${x(day(cur.date))},${H - PAD.b}L${x(day(hist[0].date))},${H - PAD.b}Z`} stroke="none" fill={`url(#nw-${s.label})`} />
+              <path d={path(hist, s.get)} stroke={s.color} strokeLinecap="round" />
+              <path d={path([cur, ...proj], s.get)} stroke={PURPLE} strokeWidth={1.75} strokeDasharray="2 5" strokeLinecap="round" />
+              {hist.map((p, i) => s.get(p) !== undefined && <circle key={p.date} cx={x(day(p.date))} cy={y(s.get(p)!)} r={i === hist.length - 1 ? 4 : 2} stroke="none" fill={i === hist.length - 1 ? YELLOW : s.color} />)}
+              {e && <text x={e.x + 8} y={e.y + 4} stroke="none" fill={PURPLE} className="text-[11px] font-medium">{lakh(e.v)}</text>}
             </g>
           );
         })}
-        {hover !== undefined && series.map((s) => s.get(all[hover]) !== undefined && <circle key={s.label} cx={x(day(all[hover].date))} cy={y(s.get(all[hover])!)} r={5} fill="none" strokeWidth={1} className={s.stroke} />)}
+        {hover !== undefined && series.map((s) => s.get(all[hover]) !== undefined && <circle key={s.label} cx={x(day(all[hover].date))} cy={y(s.get(all[hover])!)} r={5} fill="none" strokeWidth={1.5} stroke={projected ? PURPLE : s.color} />)}
         <text x={PAD.l} y={H - 4} className="fill-muted text-[11px]">{fmt(hist[0].date)}</text>
         <text x={x(day(cur.date))} y={H - 4} textAnchor="middle" className="fill-muted text-[11px]">today</text>
         <text x={W - PAD.r} y={H - 4} textAnchor="end" className="fill-muted text-[11px]">{fmt(all[all.length - 1].date)}</text>

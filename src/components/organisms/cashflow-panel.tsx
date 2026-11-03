@@ -10,6 +10,9 @@ import { AreaChart, Card, EmptyState, Tabs } from "../molecules";
 import { Sankey, TONE_COLOR } from "./sankey";
 
 const R = 80, C = 100;
+// Black, red, green, yellow, purple, then lighter tints of each, so neighbouring slices never share a colour.
+const PALETTE = ["#1c1c1b", "#c62828", "#1f8a5b", "#d9a406", "#7c3aed", "#6b6b69", "#ef7b7b", "#6fbf9a", "#f0cf6a", "#b39ae8"];
+const pick = (i: number) => PALETTE[i % PALETTE.length];
 /** Donut of where the money went; slices and legend rows are both clickable. */
 function Pie({ flows, selected, onSelect }: { flows: Flow[]; selected?: string; onSelect: (f: Flow) => void }) {
   const total = flows.reduce((t, f) => t + f.paise, 0);
@@ -19,11 +22,11 @@ function Pie({ flows, selected, onSelect }: { flows: Flow[]; selected?: string; 
   return (
     <div className="flex flex-col items-center gap-6 sm:flex-row">
       <svg viewBox="0 0 200 200" role="img" aria-label="Share of each destination" className="size-56 shrink-0">
-        {flows.map((f) => {
+        {flows.map((f, i) => {
           const sweep = Math.min((f.paise / total) * 2 * Math.PI, 2 * Math.PI - 0.001), s = a;
           a += sweep;
           return (
-            <path key={f.id} d={`M${pt(s)} A${R},${R} 0 ${sweep > Math.PI ? 1 : 0} 1 ${pt(s + sweep)}`} fill="none" stroke={TONE_COLOR[f.tone]} strokeWidth={selected === f.id ? 36 : 28}
+            <path key={f.id} d={`M${pt(s)} A${R},${R} 0 ${sweep > Math.PI ? 1 : 0} 1 ${pt(s + sweep)}`} fill="none" stroke={pick(i)} strokeWidth={selected === f.id ? 36 : 28}
               opacity={selected && selected !== f.id ? 0.35 : 1} style={{ cursor: "pointer" }} onClick={() => onSelect(f)}><title>{`${f.name}: ${inr(f.paise)}`}</title></path>
           );
         })}
@@ -31,10 +34,10 @@ function Pie({ flows, selected, onSelect }: { flows: Flow[]; selected?: string; 
         <text x={C} y={C + 14} textAnchor="middle" fontSize="13" fill="#1c1c1b">{inr(total)}</text>
       </svg>
       <ul className="w-full min-w-0 flex-1 space-y-1 text-[13px]">
-        {flows.map((f) => (
+        {flows.map((f, i) => (
           <li key={f.id}>
             <button type="button" onClick={() => onSelect(f)} className={`flex w-full items-center gap-2 py-0.5 text-left ${selected && selected !== f.id ? "opacity-50" : ""}`}>
-              <span className="size-2 shrink-0" style={{ background: TONE_COLOR[f.tone] }} />
+              <span className="size-2 shrink-0" style={{ background: pick(i) }} />
               <span className="min-w-0 flex-1 truncate">{f.name}</span>
               <span className="num text-muted">{inr(f.paise)} · {pct(f.paise, total)}</span>
             </button>
@@ -83,19 +86,19 @@ export function CashflowPanel({ cashflow: data, loading }: Props) {
           </>
         ) : (
           <div className="space-y-3">
-            {spendFlows.map((f) => (
+            {spendFlows.map((f, i) => (
               <button key={f.id} type="button" onClick={() => setSel(f)} className="block w-full text-left">
                 <div className="flex justify-between gap-3 text-[13px]"><span className="truncate">{f.name}</span><span className="num text-muted">{inr(f.paise)} · {pct(f.paise, base)}</span></div>
-                <div className="mt-1.5 h-1 bg-tint"><div className="h-1" style={{ width: `${(f.paise / Math.max(...spendFlows.map((x) => x.paise), 1)) * 100}%`, background: TONE_COLOR[f.tone] }} /></div>
+                <div className="mt-1.5 h-1 bg-tint"><div className="h-1" style={{ width: `${(f.paise / Math.max(...spendFlows.map((x) => x.paise), 1)) * 100}%`, background: pick(i) }} /></div>
               </button>
             ))}
           </div>
         )}
-        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
+        {view === "flow" && <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
           {([["income", "Income"], ["spend", "Spending"], ["discretionary", "Discretionary"], ["invest", "Invested"], ...(data.cardPayments ? [["card", "Card bills paid"] as const] : [])] as const).map(([t, l]) => (
             <span key={t} className="flex items-center gap-1.5"><span className="size-2" style={{ background: TONE_COLOR[t] }} />{l}</span>
           ))}
-        </div>
+        </div>}
       </Card>
 
       <Card title={sel ? sel.name : "Drill down"} action={sel && <button type="button" onClick={() => setSel(null)} aria-label="Clear selection" className="text-muted hover:text-ink"><X size={16} /></button>}>
