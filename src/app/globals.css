@@ -31,6 +31,8 @@
   --color-warn-bg: #fdf5e3;
   --color-info: #3b6fd4;     /* investments, SIPs, neutral highlights */
   --color-info-bg: #edf2fc;
+  --color-repaid: #7c3aed;   /* card bill payments: money repaid to a card (same violet as the cash-flow chart) */
+  --color-repaid-bg: #f4effd;
 
   --radius-xs: 2px;
   --radius-sm: 2px;

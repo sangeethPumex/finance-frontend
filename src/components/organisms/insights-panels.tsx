@@ -1,7 +1,7 @@
 "use client";
 
-import { Repeat, Warning } from "@phosphor-icons/react";
-import type { Anomaly, Patterns, Recurring } from "@/lib/api";
+import { ChartLineUp, Repeat, Storefront, TrendUp, Warning } from "@phosphor-icons/react";
+import type { Anomaly, Mover, Pace, Patterns, Recurring, TopVendor } from "@/lib/api";
 import { shortDate } from "@/lib/dates";
 import { inr } from "@/lib/money";
 import { Badge } from "../atoms";
@@ -65,5 +65,57 @@ export function WeekdayBars({ patterns }: { patterns: Patterns }) {
       {order.map((d) => <BarRow key={d} label={DAYS[d]} value={inr(patterns.weekdays[d].paise)} ratio={patterns.weekdays[d].paise / max} />)}
       <PatternNotes notes={patterns.notes} className="space-y-1.5 border-t border-line pt-3 text-[13px] text-sub" />
     </div>
+  );
+}
+
+/** Change against the same days last month: spending down is good (green), up is red. */
+const delta = (now: number, prev: number) => (now === prev ? "same as last month" : `${now > prev ? "+" : "-"}${inr(Math.abs(now - prev))} vs last month`);
+
+/** This month so far, against the same days last month, and where it is heading. */
+export function PaceCard({ pace }: { pace: Pace }) {
+  const { month_paise: now, prev_span_paise: prev } = pace;
+  return (
+    <Card title="This month's pace" icon={ChartLineUp}>
+      <div className="grid grid-cols-3 gap-4">
+        <div><div className="text-[12px] text-muted">Spent so far</div><div className="num mt-1 text-[22px] font-semibold leading-none">{inr(now)}</div>
+          <div className={`mt-1.5 text-[11px] ${now > prev ? "text-down" : "text-up"}`}>{prev > 0 || now > 0 ? delta(now, prev) : ""}</div></div>
+        <div><div className="text-[12px] text-muted">Daily average</div><div className="num mt-1 text-[22px] font-semibold leading-none">{inr(pace.daily_avg_paise)}</div><div className="mt-1.5 text-[11px] text-muted">day {pace.day} of {pace.days_in_month}</div></div>
+        <div><div className="text-[12px] text-muted">On track for</div><div className="num mt-1 text-[22px] font-semibold leading-none">{inr(pace.projected_paise)}</div><div className="mt-1.5 text-[11px] text-muted">last month {inr(pace.prev_month_paise)}</div></div>
+      </div>
+    </Card>
+  );
+}
+
+/** Each category's spend this month so far, with the change against the same days last month. */
+export function MoversCard({ items }: { items: Mover[] }) {
+  const max = Math.max(...items.flatMap((m) => [m.paise, m.prev_paise]), 1);
+  return (
+    <Card title="Where it's changing" icon={TrendUp}>
+      {items.length === 0 ? <EmptyState icon={TrendUp}>No spending this month yet</EmptyState> : (
+        <div className="space-y-3.5 text-[13px]">
+          {items.map((m) => (
+            <div key={m.name}>
+              <BarRow label={m.name} value={inr(m.paise)} ratio={m.paise / max} />
+              <div className={`mt-1 text-[11px] ${m.paise > m.prev_paise ? "text-down" : "text-up"}`}>{delta(m.paise, m.prev_paise)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+/** The payees that took the most this month. */
+export function TopVendorsCard({ items, total }: { items: TopVendor[]; total: number }) {
+  return (
+    <Card title="Top payees this month" icon={Storefront}>
+      {items.length === 0 ? <EmptyState icon={Storefront}>No spending this month yet</EmptyState> : (
+        <RowList>
+          {items.map((v) => (
+            <ListRow key={v.name} title={v.name} subtitle={`${v.count} payment${v.count === 1 ? "" : "s"}${total > 0 ? ` · ${Math.round((v.paise / total) * 100)}% of spending` : ""}`} trailing={<span>{inr(v.paise)}</span>} />
+          ))}
+        </RowList>
+      )}
+    </Card>
   );
 }

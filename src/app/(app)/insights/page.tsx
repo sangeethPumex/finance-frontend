@@ -2,7 +2,7 @@
 
 import { Clock, Lightbulb } from "@phosphor-icons/react";
 import { Card, PanelSkeleton, StatCard, StatSkeleton } from "@/components/molecules";
-import { AnomalyList, RecurringList, SubscriptionsCard, WeekdayBars } from "@/components/organisms";
+import { AnomalyList, MoversCard, PaceCard, RecurringList, SubscriptionsCard, TopVendorsCard, WeekdayBars } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { useCopilot, useInsights, useMandates } from "@/lib/api";
 import { inr } from "@/lib/money";
@@ -23,7 +23,12 @@ export default function Insights() {
         <div className="space-y-4"><div className="grid grid-cols-2 gap-4 xl:grid-cols-3">{[0, 1, 2].map((i) => <StatSkeleton key={i} />)}</div><PanelSkeleton /></div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
+          <PaceCard pace={d.pace} />
+          <div className="mt-4 grid gap-4 xl:grid-cols-2">
+            <MoversCard items={d.movers} />
+            <TopVendorsCard items={d.top_vendors} total={d.pace.month_paise} />
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-4 xl:grid-cols-3">
             <StatCard label="Mandates per month" href="/mandates" value={inr(mandateMonthly)} sub={mandates ? `${inr(mandates.year_paise)} over the next year · ${mandates.items.length} tracked` : "Loading…"} />
             <StatCard label="Detected, not in Mandates" href="/mandates" value={String(untracked.length)} tone={untracked.length > 0 ? "warn" : "good"}
               sub={untracked.length > 0 ? `${inr(untracked.reduce((a, r) => a + r.monthly_paise, 0))} a month you may want to add` : `All ${active.length} detected charges are tracked`} />

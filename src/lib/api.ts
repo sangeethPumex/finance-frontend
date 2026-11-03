@@ -125,7 +125,11 @@ export type Anomaly = { txn_id: string; vendor: string; at: string; paise: numbe
 export type Bucket = { paise: number; count: number };
 /** Weekdays run Sunday first; hours are 0-23 in IST. Notes are plain-language observations from the backend. */
 export type Patterns = { weekdays: Bucket[]; hours: Bucket[]; notes: string[] };
-export type Insights = { recurring: Recurring[]; monthly_paise: number; anomalies: Anomaly[]; patterns: Patterns };
+export type Pace = { month_paise: number; prev_span_paise: number; prev_month_paise: number; projected_paise: number; daily_avg_paise: number; day: number; days_in_month: number };
+/** A category's spend this month so far against the same days last month. */
+export type Mover = { category_id?: string; name: string; paise: number; prev_paise: number };
+export type TopVendor = { name: string; paise: number; count: number };
+export type Insights = { recurring: Recurring[]; monthly_paise: number; anomalies: Anomaly[]; patterns: Patterns; pace: Pace; movers: Mover[]; top_vendors: TopVendor[] };
 export const useInsights = () => useQuery({ queryKey: ["insights"], queryFn: () => api<Insights>("/insights") });
 export const usePatterns = () => useQuery({ queryKey: ["patterns"], queryFn: () => api<Patterns>("/insights/patterns") });
 

@@ -134,14 +134,15 @@ function CardTransactions({ card: c }: { card: Card }) {
           <div className="mt-4 bg-tint px-3 py-1.5 text-[12px] font-semibold">{m.label}</div>
           <ul className="divide-y divide-line-soft">
             {m.items.map((a) => (
-              <li key={a.id} className="flex items-center justify-between gap-3 px-3 py-2.5 text-[13px]">
+              <li key={a.id} className={cn("flex items-center justify-between gap-3 px-3 py-2.5 text-[13px]", a.kind === "payment" && "border-l-2 border-repaid bg-repaid-bg")}>
                 <span className="min-w-0">
                   <span className="flex items-center gap-2"><span className="truncate font-medium">{a.vendor}</span>
+                    {a.kind === "payment" && <Link href="/transactions" title="Linked to a bank transaction" className="shrink-0 bg-repaid px-1.5 py-0.5 text-[10px] font-medium text-white">Repaid · view transaction</Link>}
                     {a.imported && <span className="shrink-0 bg-tint px-1.5 py-0.5 text-[10px] font-medium text-muted">Statement</span>}
                     {a.needs_review && <span className="shrink-0 bg-warn/10 px-1.5 py-0.5 text-[10px] font-medium text-warn">Review</span>}</span>
                   <span className="block truncate text-[11px] text-muted">{shortDate(a.at)} · {a.kind === "payment" ? `Card payment${a.source ? ` · ${a.source}` : ""}` : a.kind === "refund" ? "Refund" : a.category || "Uncategorised"}</span>
                 </span>
-                <span className={cn("num shrink-0 font-semibold", a.kind === "purchase" ? "text-ink" : "text-up")}>{a.kind === "purchase" ? "−" : "+"}{inr(a.amount_paise)}</span>
+                <span className={cn("num shrink-0 font-semibold", a.kind === "purchase" ? "text-ink" : a.kind === "payment" ? "text-repaid" : "text-up")}>{a.kind === "purchase" ? "−" : "+"}{inr(a.amount_paise)}</span>
               </li>
             ))}
           </ul>
@@ -207,9 +208,9 @@ function CardDetail({ card: c, onEdit, onClose }: { card: Card; onEdit: () => vo
         {activity.isLoading ? <p className="text-[13px] text-muted">Loading…</p> : !activity.data?.length ? <p className="text-[13px] text-muted">No spends or payments linked to this card yet.{!c.last4 && " Add its last 4 digits so SMS can be matched."}</p> : (
           <ul className="divide-y divide-line-soft">
             {activity.data.map((a) => (
-              <li key={a.id} className="flex items-center justify-between gap-3 py-2 text-[13px]">
-                <span className="min-w-0"><span className="block truncate font-medium">{a.vendor}</span><span className="block text-[11px] text-muted">{shortDate(a.at)} · {a.kind === "purchase" ? "Purchase" : a.kind === "refund" ? "Refund" : `Card payment${a.source ? ` · ${a.source}` : ""}`}</span></span>
-                <span className={cn("num shrink-0 font-semibold", a.kind === "purchase" ? "text-ink" : "text-up")}>{a.kind === "purchase" ? "−" : "+"}{inr(a.amount_paise)}</span>
+              <li key={a.id} className={cn("flex items-center justify-between gap-3 py-2 text-[13px]", a.kind === "payment" && "border-l-2 border-repaid bg-repaid-bg px-2")}>
+                <span className="min-w-0"><span className="block truncate font-medium">{a.vendor}{a.kind === "payment" && <span className="ml-2 bg-repaid px-1.5 py-0.5 text-[10px] font-medium text-white">Repaid</span>}</span><span className="block text-[11px] text-muted">{shortDate(a.at)} · {a.kind === "purchase" ? "Purchase" : a.kind === "refund" ? "Refund" : `Card payment${a.source ? ` · ${a.source}` : ""}`}</span></span>
+                <span className={cn("num shrink-0 font-semibold", a.kind === "purchase" ? "text-ink" : a.kind === "payment" ? "text-repaid" : "text-up")}>{a.kind === "purchase" ? "−" : "+"}{inr(a.amount_paise)}</span>
               </li>
             ))}
           </ul>
@@ -223,9 +224,9 @@ function CardDetail({ card: c, onEdit, onClose }: { card: Card; onEdit: () => vo
         ) : (
           <ul className="divide-y divide-line-soft">
             {list.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-3 py-2 text-[13px]">
-                <span className="min-w-0"><span className="block font-medium">Paid on {shortDate(p.at)}</span><span className="block truncate text-[11px] text-muted">{p.source === "manual" ? "Recorded by you" : "From your bank SMS"}{p.from && ` · ${p.from}`}{p.note && ` · ${p.note}`}</span></span>
-                <span className="flex shrink-0 items-center gap-2"><span className="num font-semibold text-up">{inr(p.amount_paise)}</span>
+              <li key={p.id} className="flex items-center justify-between gap-3 border-l-2 border-repaid bg-repaid-bg px-2 py-2 text-[13px]">
+                <span className="min-w-0"><span className="block font-medium">Paid on {shortDate(p.at)}{p.source === "transaction" && <Link href="/transactions" title="Linked bank transaction" className="ml-2 bg-repaid px-1.5 py-0.5 text-[10px] font-medium text-white">Linked transaction</Link>}</span><span className="block truncate text-[11px] text-muted">{p.source === "manual" ? "Recorded by you" : "From your bank SMS"}{p.from && ` · ${p.from}`}{p.note && ` · ${p.note}`}</span></span>
+                <span className="flex shrink-0 items-center gap-2"><span className="num font-semibold text-repaid">{inr(p.amount_paise)}</span>
                   {p.source === "manual" && <button type="button" aria-label="Remove payment" onClick={() => remove(p.id)} className="grid size-7 place-items-center text-muted hover:text-down"><Trash size={14} /></button>}</span>
               </li>
             ))}
