@@ -386,6 +386,52 @@ export type JoggerList = { id: string; title: string; kind: JoggerKind; note?: s
 export type JoggerInput = { title: string; kind: JoggerKind; note?: string; remind_at: string; lead_mins: number[]; items: { id?: string; name: string; est_paise: number; bought?: boolean }[] };
 export const useJogger = () => useQuery({ queryKey: ["jogger"], queryFn: () => api<JoggerList[]>("/jogger"), refetchInterval: 60_000 });
 
+// ---- Vehicles: money is paise, dates are YYYY-MM-DD (IST), mileage is km per litre (per kWh for an electric) ----
+export type VehicleKind = "car" | "bike";
+export type FuelType = "petrol" | "diesel" | "cng" | "electric";
+export type LogKind = "fuel" | "service" | "repair" | "parts" | "wash" | "toll" | "parking" | "fine" | "trip" | "other";
+export type DocKind = "insurance" | "rc" | "puc" | "service" | "receipt" | "other";
+/** comprehensive: own damage and third party. third_party: the legal minimum. own_damage: first-party cover on its own. */
+export type InsuranceType = "comprehensive" | "third_party" | "own_damage";
+export type Insurance = { type?: InsuranceType; insurer?: string; policy_no?: string; expires?: string; premium_paise?: number; idv_paise?: number };
+export type VehicleInput = {
+  kind: VehicleKind; name: string; make?: string; model?: string; year?: number; plate: string; fuel: FuelType;
+  tank_litres?: number; claimed_kmpl?: number; odometer_km?: number; insurance: Insurance; puc_expires?: string; service_km?: number; service_months?: number;
+  /** The service schedule runs from bought_on until a service is logged; service_planned is a booked date, which wins. */
+  bought_on?: string; service_planned?: string;
+};
+export type VehicleDoc = { id: string; kind: DocKind; name: string; type: string; size: number; at: string };
+export type VehicleLog = {
+  id: string; kind: LogKind; date: string; odometer_km?: number; amount_paise: number; litres?: number; full_tank?: boolean;
+  place?: string; from?: string; trip_km?: number; note?: string; txn_id?: string;
+};
+export type VehicleReminder = { kind: "insurance" | "puc" | "service"; title: string; date: string; days: number; tone: "good" | "warn" | "bad" };
+export type VehicleStats = {
+  odometer_km: number; avg_kmpl?: number; last_kmpl?: number; best_kmpl?: number; price_per_l?: number; km_per_month?: number; range_km?: number;
+  fills: { date: string; km: number; litres: number; kmpl: number; price_per_l: number }[];
+  fuel_per_km_paise?: number; run_per_km_paise?: number; total_paise: number; month_paise: number; year_paise: number;
+  by_kind: { kind: LogKind; paise: number; count: number }[];
+  months: { month: string; fuel_paise: number; other_paise: number; litres: number }[];
+  next_month_fuel_paise?: number; next_year_paise?: number;
+  /** due_date is planned when one is booked, else suggested (the maker's schedule). */
+  next_service?: { due_km?: number; km_left?: number; due_date: string; suggested?: string; planned?: string; days: number; last?: string };
+  reminders: VehicleReminder[]; trips: number; trip_km: number;
+};
+export type Vehicle = VehicleInput & { id: string; photo?: string; docs: VehicleDoc[]; created_at: string; stats: VehicleStats };
+export type VehicleDetail = Vehicle & { logs: VehicleLog[] };
+/** A recent bank debit that looks like fuel, a toll or upkeep, not yet logged against any vehicle. */
+export type VehicleSuggestion = { txn_id: string; date: string; vendor: string; amount_paise: number; kind: LogKind };
+export const useVehicles = list<Vehicle>("vehicles");
+export const useVehicle = (id: string) => useQuery({ queryKey: ["vehicles", id], queryFn: () => api<VehicleDetail>(`/vehicles/${id}`) });
+export const useVehicleSuggestions = () => useQuery({ queryKey: ["vehicles", "suggestions"], queryFn: () => api<VehicleSuggestion[]>("/vehicles/suggestions") });
+/** Where a vehicle's photo or paper is served from; v changes with each new photo so the browser does not show a stale one. */
+export const vehicleFileUrl = (id: string, file: string, v?: string) => `/api/vehicles/${id}/files/${file}${v ? `?v=${encodeURIComponent(v)}` : ""}`;
+/** Sends a file as the raw body; the backend stores it in the bucket under vehicles/{id}/{kind}/. */
+export async function uploadVehicleFile(id: string, kind: DocKind | "photo", file: File) {
+  const res = await fetch(`/api/vehicles/${id}/files?kind=${kind}&name=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": file.type }, body: file });
+  if (!res.ok) throw new Error(((await res.json().catch(() => null)) as { error?: string } | null)?.error ?? `Upload failed (${res.status})`);
+}
+
 // ---- Copilot: what to do now. Computed by the backend; money here is paise, runway is days ----
 export type CopilotEvent = { offset: number; date: string; name: string; paise: number; kind: "salary" | "mandate" | "emi" | "sip" | "card" | "renewal"; count?: number };
 export type CopilotMode = { key: string; label: string; months: number; floorPct: number };
