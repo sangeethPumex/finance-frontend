@@ -28,7 +28,7 @@ export default function Insights() {
             <MoversCard items={d.movers} />
             <TopVendorsCard items={d.top_vendors} total={d.pace.month_paise} />
           </div>
-          <div className="mt-4"><InflationCard data={d.inflation} /></div>
+          {d.inflation && <div className="mt-4"><InflationCard data={d.inflation} /></div>}
           <div className="mt-4 grid grid-cols-2 gap-4 xl:grid-cols-3">
             <StatCard label="Mandates per month" href="/mandates" value={inr(mandateMonthly)} sub={mandates ? `${inr(mandates.year_paise)} over the next year · ${mandates.items.length} tracked` : "Loading…"} />
             <StatCard label="Detected, not in Mandates" href="/mandates" value={String(untracked.length)} tone={untracked.length > 0 ? "warn" : "good"}

@@ -132,7 +132,7 @@ export type TopVendor = { name: string; paise: number; count: number };
 /** A category's last three full months against the same three months a year earlier. */
 export type RealMover = { category_id?: string; name: string; paise: number; prev_paise: number };
 export type Inflation = { pct: number; movers: RealMover[] };
-export type Insights = { recurring: Recurring[]; monthly_paise: number; anomalies: Anomaly[]; patterns: Patterns; pace: Pace; movers: Mover[]; top_vendors: TopVendor[]; inflation: Inflation };
+export type Insights = { recurring: Recurring[]; monthly_paise: number; anomalies: Anomaly[]; patterns: Patterns; pace: Pace; movers: Mover[]; top_vendors: TopVendor[]; inflation?: Inflation };
 export const useInsights = () => useQuery({ queryKey: ["insights"], queryFn: () => api<Insights>("/insights") });
 export const usePatterns = () => useQuery({ queryKey: ["patterns"], queryFn: () => api<Patterns>("/insights/patterns") });
 
