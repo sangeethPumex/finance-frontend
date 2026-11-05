@@ -2,7 +2,7 @@
 
 import { Clock, Lightbulb } from "@phosphor-icons/react";
 import { Card, PanelSkeleton, StatCard, StatSkeleton } from "@/components/molecules";
-import { AnomalyList, MoversCard, PaceCard, RecurringList, SubscriptionsCard, TopVendorsCard, WeekdayBars } from "@/components/organisms";
+import { AnomalyList, InflationCard, MoversCard, PaceCard, RecurringList, SubscriptionsCard, TopVendorsCard, WeekdayBars } from "@/components/organisms";
 import { PageLayout } from "@/components/templates";
 import { useCopilot, useInsights, useMandates } from "@/lib/api";
 import { inr } from "@/lib/money";
@@ -28,6 +28,7 @@ export default function Insights() {
             <MoversCard items={d.movers} />
             <TopVendorsCard items={d.top_vendors} total={d.pace.month_paise} />
           </div>
+          <div className="mt-4"><InflationCard data={d.inflation} /></div>
           <div className="mt-4 grid grid-cols-2 gap-4 xl:grid-cols-3">
             <StatCard label="Mandates per month" href="/mandates" value={inr(mandateMonthly)} sub={mandates ? `${inr(mandates.year_paise)} over the next year · ${mandates.items.length} tracked` : "Loading…"} />
             <StatCard label="Detected, not in Mandates" href="/mandates" value={String(untracked.length)} tone={untracked.length > 0 ? "warn" : "good"}

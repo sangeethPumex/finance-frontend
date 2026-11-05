@@ -1,7 +1,7 @@
 "use client";
 
-import { ChartLineUp, Repeat, Storefront, TrendUp, Warning } from "@phosphor-icons/react";
-import type { Anomaly, Mover, Pace, Patterns, Recurring, TopVendor } from "@/lib/api";
+import { ChartLineUp, Repeat, Scales, Storefront, TrendUp, Warning } from "@phosphor-icons/react";
+import type { Anomaly, Inflation, Mover, Pace, Patterns, Recurring, TopVendor } from "@/lib/api";
 import { shortDate } from "@/lib/dates";
 import { inr } from "@/lib/money";
 import { Badge } from "../atoms";
@@ -108,6 +108,32 @@ export function MoversCard({ items }: { items: Mover[] }) {
             </div>
           ))}
         </div>
+      )}
+    </Card>
+  );
+}
+
+const pct = (x: number) => `${x >= 0 ? "+" : "-"}${Math.abs(Math.round(x * 100))}%`;
+
+/** Each category against the same three months a year ago: the rupee change split into prices (the assumed inflation) and how much you bought. */
+export function InflationCard({ data }: { data: Inflation }) {
+  const price = data.pct / 100;
+  return (
+    <Card title="Inflation-adjusted spending" icon={Scales}>
+      {data.movers.length === 0 ? <EmptyState icon={Scales}>Needs spending from a year ago to compare against</EmptyState> : (
+        <>
+          <RowList>
+            {data.movers.map((m) => {
+              const nominal = m.paise / m.prev_paise - 1, volume = (1 + nominal) / (1 + price) - 1;
+              return (
+                <ListRow key={m.name} title={m.name}
+                  subtitle={`${inr(m.prev_paise)} → ${inr(m.paise)} · ${pct(nominal)} in rupees, prices ${pct(price)}`}
+                  trailing={Math.abs(volume) < 0.03 ? <Badge variant="neutral">Just prices</Badge> : <Badge variant={volume > 0 ? "warn" : "good"}>{volume > 0 ? `Bought ${pct(volume).slice(1)} more` : `Bought ${pct(volume).slice(1)} less`}</Badge>} />
+              );
+            })}
+          </RowList>
+          <p className="mt-3 text-[11px] text-muted">Last 3 full months against the same months a year ago. Prices are assumed to have risen {data.pct}% (set INFLATION_PCT on the backend).</p>
+        </>
       )}
     </Card>
   );
