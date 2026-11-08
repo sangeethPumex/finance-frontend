@@ -4,13 +4,13 @@ import Link from "next/link";
 import { Bank } from "@phosphor-icons/react";
 import { api, useWrite, type Account } from "@/lib/api";
 import { bankName } from "@/lib/banks";
-import { localToIso, shortDate } from "@/lib/dates";
+import { shortDate } from "@/lib/dates";
 import { inr, rupeesToPaise } from "@/lib/money";
 import { BankLogo } from "../atoms";
 import { DataTable, type Column } from "./data-table";
 import { EditDialog } from "./edit-dialog";
 
-/** Edits every account field; the balance is recomputed from the opening balance and the moment it was true. */
+/** Edits the account; a changed current balance becomes the new opening balance as of now, so drift is reset and later transactions count from here. */
 export function EditAccount({ a }: { a: Account }) {
   const save = useWrite((body: object) => api(`/accounts/${a.id}`, { method: "PATCH", body }));
   return (
@@ -22,13 +22,13 @@ export function EditAccount({ a }: { a: Account }) {
         { name: "name", label: "Name", defaultValue: a.name, required: true },
         { name: "bank", label: "Bank", defaultValue: bankName(a.bank), required: true },
         { name: "last4", label: "Last 4", defaultValue: a.last4, pattern: "[0-9]{4}", maxLength: 4, required: true },
-        { name: "balance", label: "Opening balance (₹)", defaultValue: String(a.opening_balance_paise / 100), inputMode: "decimal", required: true },
-        { name: "at", label: "Balance as of (empty keeps current)", type: "datetime-local" },
+        { name: "balance", label: "Current balance (₹)", defaultValue: String(a.balance_paise / 100), inputMode: "decimal", required: true },
       ]}
       onSave={(v, done) => {
         const paise = rupeesToPaise(v.balance);
         if (paise === null) return "Invalid amount";
-        save.mutate({ name: v.name, bank: v.bank, last4: v.last4, opening_balance_paise: paise, opening_at: localToIso(v.at) ?? a.opening_at }, { onSuccess: done });
+        const reset = paise !== a.balance_paise ? { opening_balance_paise: paise, opening_at: new Date().toISOString() } : {};
+        save.mutate({ name: v.name, bank: v.bank, last4: v.last4, ...reset }, { onSuccess: done });
       }}
     />
   );

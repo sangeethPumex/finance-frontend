@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { COOKIE, apiSecretFor, verify } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -11,13 +12,16 @@ async function handle(req: NextRequest, ctx: { params: Promise<{ path: string[] 
   const body = hasBody ? await req.arrayBuffer() : undefined;
 
   const base = process.env.API_BASE_URL;
-  if (!base || !process.env.API_SECRET) {
-    return Response.json({ error: "API_BASE_URL and API_SECRET are not set" }, { status: 500 });
+  // The key comes from who is signed in, never from the browser, so one user cannot reach another's data.
+  const user = await verify(req.cookies.get(COOKIE)?.value);
+  const secret = user && apiSecretFor(user);
+  if (!base || !secret) {
+    return Response.json({ error: base ? "Sign in first" : "API_BASE_URL is not set" }, { status: base ? 401 : 500 });
   }
   try {
     const res = await fetch(base.replace(/\/$/, "") + target, {
       method: req.method,
-      headers: { "X-API-Key": process.env.API_SECRET, ...(hasBody ? { "Content-Type": req.headers.get("content-type") ?? "application/json" } : {}) },
+      headers: { "X-API-Key": secret, ...(hasBody ? { "Content-Type": req.headers.get("content-type") ?? "application/json" } : {}) },
       body,
       cache: "no-store",
     });
