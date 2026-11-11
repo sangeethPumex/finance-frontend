@@ -6,7 +6,7 @@ frontend:
         - npm ci
     build:
       commands:
-        - env | grep -E '^(API_BASE_URL|API_SECRET|AUTH_PASSPHRASE|SESSION_SECRET)=' >> .env.production
+        - env | grep -E '^(API_BASE_URL|USERS|SESSION_SECRET)=' >> .env.production
         - npm run build
   artifacts:
     baseDirectory: .next

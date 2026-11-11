@@ -14,13 +14,13 @@ export default function LoginPage() {
     e.preventDefault();
     setBusy(true);
     setError("");
-    const passphrase = String(new FormData(e.currentTarget).get("passphrase") ?? "");
-    const res = await fetch("/api/login", { method: "POST", body: JSON.stringify({ passphrase }) });
+    const f = new FormData(e.currentTarget);
+    const res = await fetch("/api/login", { method: "POST", body: JSON.stringify({ username: f.get("username"), pin: f.get("pin") }) });
     if (res.ok) {
       router.replace("/");
       router.refresh();
     } else {
-      setError("Wrong passphrase");
+      setError("Wrong username or PIN");
       setBusy(false);
     }
   }
@@ -37,7 +37,8 @@ export default function LoginPage() {
             <img src="/catalyst-full.svg" alt="Catalyst" className="h-9 w-auto" />
             <Eyebrow className="mt-3 tracking-[0.2em]">Personal finance</Eyebrow>
           </div>
-          <Input name="passphrase" type="password" placeholder="Passphrase" aria-label="Passphrase" autoFocus autoComplete="current-password" required className="w-full" />
+          <Input name="username" placeholder="Username" aria-label="Username" autoFocus autoComplete="username" autoCapitalize="none" required className="w-full" />
+          <Input name="pin" type="password" inputMode="numeric" placeholder="PIN" aria-label="PIN" autoComplete="current-password" required className="w-full" />
           <InlineError error={error} />
           <Button type="submit" loading={busy} size="lg" className="w-full">Sign in</Button>
         </form>

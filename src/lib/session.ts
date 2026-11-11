@@ -16,22 +16,21 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-type Person = { name: string; passphrase: string; apiSecret: string };
+type Person = { name: string; pin: string; apiSecret: string };
 
-/** The owner (AUTH_PASSPHRASE, API_SECRET) plus anyone in USERS, a JSON list of {name, passphrase, api_secret}. Names are a-z, 0-9, _ or - so they fit in the cookie. */
+/** USERS is a JSON list of {name, pin, api_secret}; api_secret is that person's <NAME>_SECRET on the backend. Names are a-z, 0-9, _ or - so they fit in the cookie. */
 function people(): Person[] {
-  let extra: { name?: string; passphrase?: string; api_secret?: string }[] = [];
-  try { extra = JSON.parse(process.env.USERS || "[]"); } catch { /* a broken USERS adds nobody */ }
-  const all = [{ name: "owner", passphrase: process.env.AUTH_PASSPHRASE ?? "", apiSecret: process.env.API_SECRET ?? "" },
-    ...extra.map((u) => ({ name: u.name ?? "", passphrase: u.passphrase ?? "", apiSecret: u.api_secret ?? "" }))];
-  return all.filter((p) => /^[a-z0-9_-]+$/.test(p.name) && p.passphrase && p.apiSecret);
+  let list: { name?: string; pin?: string; api_secret?: string }[] = [];
+  try { list = JSON.parse(process.env.USERS || "[]"); } catch { /* a broken USERS adds nobody */ }
+  return list.map((u) => ({ name: u.name ?? "", pin: u.pin ?? "", apiSecret: u.api_secret ?? "" })).filter((p) => /^[a-z0-9_-]+$/.test(p.name) && p.pin && p.apiSecret);
 }
 
-/** Who this passphrase belongs to, or undefined. Every user is compared so timing does not say which one was close. */
-export async function login(given: string): Promise<string | undefined> {
+/** The name if username and PIN match, or undefined. Every user is compared so timing does not say which one was close. */
+export async function login(username: string, pin: string): Promise<string | undefined> {
   if (!process.env.SESSION_SECRET) return undefined;
+  const given = await hmac(`${username.trim().toLowerCase()}:${pin}`);
   let hit: string | undefined;
-  for (const p of people()) if (safeEqual(await hmac("pw:" + given), await hmac("pw:" + p.passphrase))) hit = p.name;
+  for (const p of people()) if (safeEqual(given, await hmac(`${p.name}:${p.pin}`))) hit = p.name;
   return hit;
 }
 
