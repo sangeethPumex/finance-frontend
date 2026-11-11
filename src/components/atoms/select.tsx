@@ -10,6 +10,8 @@ export type SelectProps = Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "s
   size?: FieldSize;
   variant?: FieldVariant;
   invalid?: boolean;
+  /** Shows a filter box at the top of the list; typing narrows the options. */
+  searchable?: boolean;
 };
 
 type Opt = { value: string; label: string; disabled?: boolean; group?: string };
@@ -32,12 +34,15 @@ function collect(children: ReactNode, group?: string, out: Opt[] = []): Opt[] {
  * A dropdown in the app's own style. It takes the same props and <option> children as a native select and calls onChange with
  * { target: { value, name } }, so callers did not change. A hidden input carries the value into forms, and form.reset() restores the default.
  */
-export function Select({ size, variant, invalid, className, children, value, defaultValue, onChange, name, required, disabled, id, ...p }: SelectProps) {
-  const opts = collect(children);
+export function Select({ size, variant, invalid, searchable, className, children, value, defaultValue, onChange, name, required, disabled, id, ...p }: SelectProps) {
+  const all = collect(children);
+  const [q, setQ] = useState("");
+  const opts = searchable && q ? all.filter((o) => o.label.toLowerCase().includes(q.trim().toLowerCase())) : all;
   const [inner, setInner] = useState(String(defaultValue ?? ""));
   const current = value !== undefined ? String(value) : inner;
-  const sel = opts.find((o) => o.value === current);
+  const sel = all.find((o) => o.value === current);
   const [open, setOpen] = useState(false);
+  useEffect(() => { if (!open) setQ(""); }, [open]);
   const [hi, setHi] = useState(0);
   const [box, setBox] = useState<{ left: number; width: number; top?: number; bottom?: number; max: number }>();
   const btn = useRef<HTMLButtonElement>(null), list = useRef<HTMLUListElement>(null), field = useRef<HTMLInputElement>(null);
@@ -79,15 +84,15 @@ export function Select({ size, variant, invalid, className, children, value, def
     btn.current?.focus();
   };
   const openList = () => { setHi(Math.max(opts.findIndex((o) => o.value === current), 0)); setOpen(true); };
-  const move = (d: number) => { let i = hi; do { i = (i + d + opts.length) % opts.length; } while (opts[i]?.disabled && i !== hi); setHi(i); };
+  const move = (d: number) => { if (!opts.length) return; let i = hi; do { i = (i + d + opts.length) % opts.length; } while (opts[i]?.disabled && i !== hi); setHi(i); };
 
   const onKey = (e: React.KeyboardEvent) => {
     if (disabled) return;
     if (e.key === "Escape" && open) { e.stopPropagation(); setOpen(false); return; } // keeps a surrounding dialog open
     if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); if (open) move(e.key === "ArrowDown" ? 1 : -1); else openList(); }
-    else if ((e.key === "Enter" || e.key === " ") && open) { e.preventDefault(); if (opts[hi]) pick(opts[hi]); }
+    else if ((e.key === "Enter" || (e.key === " " && !searchable)) && open) { e.preventDefault(); if (opts[hi]) pick(opts[hi]); }
     else if (e.key === "Tab") setOpen(false);
-    else if (e.key.length === 1 && /\S/.test(e.key)) { // type a letter to jump
+    else if (!searchable && e.key.length === 1 && /\S/.test(e.key)) { // type a letter to jump
       const i = opts.findIndex((o, n) => n > (open ? hi : -1) && o.label.toLowerCase().startsWith(e.key.toLowerCase()));
       const j = i >= 0 ? i : opts.findIndex((o) => o.label.toLowerCase().startsWith(e.key.toLowerCase()));
       if (j >= 0) { if (open) setHi(j); else pick(opts[j]); }
@@ -104,7 +109,7 @@ export function Select({ size, variant, invalid, className, children, value, def
         {/* the longest option sets the width, so the control does not resize as the choice changes */}
         <span className="grid min-w-0 flex-1">
           <span className={cn("col-start-1 row-start-1 truncate", !sel?.value && "text-muted")}>{sel?.label || "Select…"}</span>
-          <span aria-hidden className="invisible col-start-1 row-start-1 h-0 overflow-hidden whitespace-nowrap">{opts.reduce((m, o) => (o.label.length > m.length ? o.label : m), "Select…")}</span>
+          <span aria-hidden className="invisible col-start-1 row-start-1 h-0 overflow-hidden whitespace-nowrap">{all.reduce((m, o) => (o.label.length > m.length ? o.label : m), "Select…")}</span>
         </span>
         <CaretDown size={12} weight="bold" className={cn("shrink-0 text-muted transition-transform", open && "rotate-180")} />
       </button>
@@ -113,6 +118,13 @@ export function Select({ size, variant, invalid, className, children, value, def
       {open && box && createPortal(
         <ul ref={list} id={`${uid}-list`} role="listbox" style={{ position: "fixed", left: box.left, width: box.width, top: box.top, bottom: box.bottom, maxHeight: box.max }}
           className="z-[70] overflow-y-auto rounded-md border border-line bg-surface py-1 shadow-[0_8px_24px_rgba(0,0,0,.12)]">
+          {searchable && (
+            <div className="sticky top-0 z-10 -mt-1 border-b border-line bg-surface p-2">
+              <input autoFocus value={q} onChange={(e) => { setQ(e.target.value); setHi(0); }} onKeyDown={onKey} placeholder="Search…" aria-label="Search options"
+                className="h-8 w-full rounded-md border border-line bg-surface px-2 text-[13px] outline-none focus:border-ink" />
+            </div>
+          )}
+          {opts.length === 0 && <li role="presentation" className="px-3 py-2 text-[13px] text-muted">No matches</li>}
           {opts.map((o, i) => {
             const head = o.group && o.group !== lastGroup ? o.group : null;
             lastGroup = o.group;

@@ -60,17 +60,18 @@ function DeleteCell({ v }: { v: Vendor }) {
   );
 }
 
-function MergeCell({ v, canMerge }: { v: Vendor; canMerge: boolean }) {
+// Always enabled: the dialog lists every vendor, so a search that shows one row can still merge it into one that is hidden.
+function MergeCell({ v }: { v: Vendor }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button variant="quiet" size="icon" icon={GitMerge} aria-label={`Merge ${v.name} into another vendor`} title="Merge into another vendor" disabled={!canMerge} onClick={() => setOpen(true)} />
+      <Button variant="quiet" size="icon" icon={GitMerge} aria-label={`Merge ${v.name} into another vendor`} title="Merge into another vendor" onClick={() => setOpen(true)} />
       {open && <MergeVendorDialog vendor={v} onClose={() => setOpen(false)} />}
     </>
   );
 }
 
-export function VendorsTable({ vendors, total, categories, loading, emptyText, sort, onSort }: {
+export function VendorsTable({ vendors, categories, loading, emptyText, sort, onSort }: {
   vendors: Vendor[]; total: number; categories: Category[]; loading?: boolean; emptyText?: string; sort?: DataTableProps<Vendor>["sort"]; onSort?: (field: string) => void;
 }) {
   const byId = new Map(categories.map((c) => [c.id, c]));
@@ -78,7 +79,7 @@ export function VendorsTable({ vendors, total, categories, loading, emptyText, s
     { key: "name", header: "Vendor", sortKey: "name", cell: (v) => v.name },
     { key: "category", header: "Category", cell: (v) => { const c = v.category_id ? byId.get(v.category_id) : undefined; return <span className="text-muted">{c ? <CategoryLabel name={c.name} icon={c.icon} /> : "—"}</span>; } },
     { key: "aliases", header: "Aliases", cell: (v) => <AliasList v={v} /> },
-    { key: "actions", header: "", align: "right", cell: (v) => <span className="flex items-center justify-end gap-1"><EditVendor v={v} categories={categories} /><MergeCell v={v} canMerge={total > 1} /><DeleteCell v={v} /></span> },
+    { key: "actions", header: "", align: "right", cell: (v) => <span className="flex items-center justify-end gap-1"><EditVendor v={v} categories={categories} /><MergeCell v={v} /><DeleteCell v={v} /></span> },
   ];
   return <DataTable columns={columns} rows={vendors} rowKey={(v) => v.id} loading={loading} sort={sort} onSort={onSort} emptyIcon={Storefront} emptyText={emptyText ?? "No vendors yet. Save one from a transaction that needs review."} />;
 }
