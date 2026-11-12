@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, Eyebrow, Input } from "@/components/atoms";
 import { InlineError } from "@/components/molecules";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const router = useRouter(), qc = useQueryClient();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -17,6 +18,7 @@ export default function LoginPage() {
     const f = new FormData(e.currentTarget);
     const res = await fetch("/api/login", { method: "POST", body: JSON.stringify({ username: f.get("username"), pin: f.get("pin") }) });
     if (res.ok) {
+      qc.clear(); // signing in as someone else in the same tab must not show the last person's cached data
       router.replace("/");
       router.refresh();
     } else {
