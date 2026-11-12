@@ -6,7 +6,7 @@ import { ChartBar, X } from "@phosphor-icons/react";
 import type { Dashboard, Flow } from "@/lib/api";
 import { shortDate } from "@/lib/dates";
 import { inr } from "@/lib/money";
-import { AreaChart, Card, EmptyState, Tabs } from "../molecules";
+import { Card, EmptyState, Tabs } from "../molecules";
 import { Sankey, TONE_COLOR } from "./sankey";
 
 const R = 80, C = 100;
@@ -21,7 +21,7 @@ function Pie({ flows, selected, onSelect }: { flows: Flow[]; selected?: string; 
   const pt = (t: number) => `${C + R * Math.cos(t)},${C + R * Math.sin(t)}`;
   return (
     <div className="flex flex-col items-center gap-6 sm:flex-row">
-      <svg viewBox="0 0 200 200" role="img" aria-label="Share of each destination" className="size-56 shrink-0">
+      <svg viewBox="0 0 200 200" role="img" aria-label="Share of each slice" className="size-56 shrink-0">
         {flows.map((f, i) => {
           const sweep = Math.min((f.paise / total) * 2 * Math.PI, 2 * Math.PI - 0.001), s = a;
           a += sweep;
@@ -48,20 +48,20 @@ function Pie({ flows, selected, onSelect }: { flows: Flow[]; selected?: string; 
   );
 }
 
-type View = "flow" | "pie" | "trend" | "categories";
-const VIEWS: { value: View; label: string }[] = [{ value: "flow", label: "Money flow" }, { value: "pie", label: "Share" },{ value: "trend", label: "Spending trend" }, { value: "categories", label: "Categories" }];
+type View = "flow" | "pie" | "vendors" | "income" | "categories";
+const VIEWS: { value: View; label: string }[] = [{ value: "flow", label: "Money flow" }, { value: "pie", label: "Share" },{ value: "vendors", label: "Top vendors" }, { value: "income", label: "Income sources" }, { value: "categories", label: "Categories" }];
 
 type Props = { cashflow: Dashboard["cashflow"]; loading: boolean };
 
 const pct = (p: number, of: number) => (of > 0 ? `${Math.round((p / of) * 100)}%` : "–");
 
-/** The chart card (flow / trend / categories) with a drill-down panel beside it. */
+/** The chart card (flow / share / vendors / income / categories) with a drill-down panel beside it. */
 export function CashflowPanel({ cashflow: data, loading }: Props) {
   const [view, setView] = useState<View>("flow");
   const [sel, setSel] = useState<Flow | null>(null);
   const base = data.incomePaise || data.spentPaise;
   const empty = data.sources.length === 0 && data.dests.length === 0;
-  const peak = data.daily.reduce((m, d) => (d.paise > m.paise ? d : m), { date: "", paise: 0 } as Dashboard["cashflow"]["daily"][number]);
+  const incomeFlows = data.sources.filter((f) => f.tone === "income");
   const spendFlows = data.dests.filter((f) => f.tone !== "net");
 
   return (
@@ -75,15 +75,10 @@ export function CashflowPanel({ cashflow: data, loading }: Props) {
           <Sankey sources={data.sources} dests={data.dests} income={data.incomePaise} selected={sel?.id} onSelect={setSel} memo={data.cardPayments} />
         ) : view === "pie" ? (
           <Pie flows={data.dests} selected={sel?.id} onSelect={setSel} />
-        ) : view === "trend" ? (
-          <>
-            <AreaChart label="Daily spending" values={data.daily.map((d) => d.paise)} color="var(--color-ink)" />
-            {peak.paise > 0 && (
-              <p className="mt-2 text-[12px] text-muted">
-                Peak {inr(peak.paise)} on {shortDate(peak.date)}{peak.top && <> · largest was <Link href="/transactions" className="text-ink underline">{peak.top.vendor}</Link> ({peak.top.category}, {inr(peak.top.paise)})</>}
-              </p>
-            )}
-          </>
+        ) : view === "vendors" ? (
+          data.vendors.length ? <Pie flows={data.vendors} selected={sel?.id} onSelect={setSel} /> : <EmptyState icon={ChartBar}>No spending in this period yet.</EmptyState>
+        ) : view === "income" ? (
+          incomeFlows.length ? <Pie flows={incomeFlows} selected={sel?.id} onSelect={setSel} /> : <EmptyState icon={ChartBar}>No income in this period yet.</EmptyState>
         ) : (
           <div className="space-y-3">
             {spendFlows.map((f, i) => (

@@ -221,7 +221,7 @@ export type Dashboard = {
   position: { cashPaise: number; accounts: number; netWorthPaise: number; liabilitiesPaise: number; netWorthChangePaise?: number; netWorthChangeSince?: string; investedPaise: number; currentPaise: number; pnlPaise: number; allocation: { name: string; paise: number }[]; usesFunds: boolean };
   cashflow: {
     incomePaise: number; spentPaise: number; investedPaise: number; netPaise: number; savingsRate?: number;
-    sources: Flow[]; dests: Flow[]; earlierSpentPaise: number;
+    sources: Flow[]; dests: Flow[]; vendors: Flow[]; earlierSpentPaise: number;
     /** Bill payments in the period; already counted in spending, so shown beside the chart and left out of every total. */
     cardPayments?: Flow;
     daily: { date: string; paise: number; top?: { vendor: string; category: string; paise: number } }[];

@@ -30,8 +30,11 @@ function DirectionBadge({ t }: { t: Txn }) {
 function ReviewCell({ t, categories }: { t: Txn; categories: Category[] }) {
   const [cat, setCat] = useState(t.suggested_category_id ?? "");
   const setTxn = useTxnCache();
-  const save = useWrite(() =>
-    api("/vendors", { method: "POST", body: { name: vendorLabel(t), category_id: cat, aliases: [(t.upi_id || t.raw_vendor || "").toLowerCase()] } }), ["vendors", ...TXN_KEYS]);
+  const alias = (t.upi_id || t.raw_vendor || "").toLowerCase();
+  // No payee (e.g. a bare bank credit): a vendor with an empty alias would never match, so file this one transaction instead.
+  const save = useWrite(() => alias
+    ? api("/vendors", { method: "POST", body: { name: vendorLabel(t), category_id: cat, aliases: [alias] } })
+    : api(`/transactions/${t.id}`, { method: "PATCH", body: { category_id: cat } }), ["vendors", ...TXN_KEYS]);
   return (
     <span className="flex items-center gap-1.5">
       <Select size="sm" value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Category">
