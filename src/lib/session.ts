@@ -54,3 +54,8 @@ export function apiSecretFor(user: string): string | undefined {
 }
 
 export const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", maxAge: DAYS * 86400 };
+
+/** Every configured person with their backend key, for the household view only. Server-side: the keys never reach the browser. */
+export function everyone(): { name: string; secret: string }[] {
+  return people().map((p) => ({ name: p.name, secret: p.apiSecret }));
+}

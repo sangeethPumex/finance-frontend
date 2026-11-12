@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { CaretDown, SignOut } from "@phosphor-icons/react";
+import Link from "next/link";
+import { ArrowsLeftRight, CaretDown, SignOut } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import type { NavGroup } from "@/lib/nav";
 import { NavItem } from "../molecules";
@@ -15,10 +16,12 @@ export type SidebarProps = {
   collapsed: boolean;
   /** Shows a Sign Out entry at the bottom when given. */
   onSignOut?: () => void;
+  /** The space's root page: active only on an exact match. */
+  home?: string;
 };
 
 /** Full-height navigation on a tinted rail: brand card, grouped links, account card. Collapse state lives in the shell, the toggle in the header. */
-export function Sidebar({ groups, collapsed, onSignOut }: SidebarProps) {
+export function Sidebar({ groups, collapsed, onSignOut, home = "/" }: SidebarProps) {
   const path = usePathname();
   const [closed, setClosed] = useState<string[]>([]); // titles of groups folded shut
   // Restore after mount so server and client render the same first frame.
@@ -53,7 +56,7 @@ export function Sidebar({ groups, collapsed, onSignOut }: SidebarProps) {
               )}
               {collapsed && g > 0 && <div role="separator" className="mx-3 hidden h-px bg-line md:block" />}
               {!shut && group.links.map((l) => (
-                <NavItem key={l.href} {...l} active={l.href === "/" ? path === "/" : path.startsWith(l.href)} collapsed={collapsed} />
+                <NavItem key={l.href} {...l} active={l.href === home ? path === home : path.startsWith(l.href)} collapsed={collapsed} />
               ))}
             </div>
           );
@@ -62,6 +65,7 @@ export function Sidebar({ groups, collapsed, onSignOut }: SidebarProps) {
 
       {onSignOut && (
         <div className="hidden border-t border-line p-3 md:block">
+          <Link href="/" title="Switch space" className={cn("mb-2 flex h-9 items-center gap-3 px-3 text-[13px] text-muted transition-colors hover:text-ink", collapsed && "justify-center px-0")}><ArrowsLeftRight size={16} />{!collapsed && "Switch space"}</Link>
           <button type="button" onClick={onSignOut} title="Sign out" className={cn("flex h-12 w-full items-center gap-3 border border-line bg-surface px-3 text-left transition-colors hover:border-strong", collapsed && "justify-center px-0")}>
             <span className="grid size-8 shrink-0 place-items-center bg-ink text-[13px] font-semibold text-white">C</span>
             {!collapsed && (

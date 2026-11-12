@@ -145,7 +145,7 @@ export default function VehiclePage() {
         <div className="mt-4 grid grid-cols-2 gap-4 xl:grid-cols-4">
           <StatCard label="Mileage" icon={Gauge} value={s.avg_kmpl ? `${s.avg_kmpl} ${unit}` : "—"}
             tone={s.avg_kmpl && v.claimed_kmpl ? (s.avg_kmpl >= v.claimed_kmpl * 0.85 ? "good" : "warn") : "neutral"}
-            sub={s.avg_kmpl ? [`last tank ${s.last_kmpl}`, `best ${s.best_kmpl}`, v.claimed_kmpl && `claimed ${v.claimed_kmpl}`].filter(Boolean).join(" · ") : "Log two full tanks with odometer readings"} />
+            sub={s.kmpl_estimated ? ["estimated from odometer and litres bought, no full tank needed", v.claimed_kmpl && `claimed ${v.claimed_kmpl}`].filter(Boolean).join(" · ") : s.avg_kmpl ? [`last tank ${s.last_kmpl}`, `best ${s.best_kmpl}`, v.claimed_kmpl && `claimed ${v.claimed_kmpl}`].filter(Boolean).join(" · ") : "Log fuel with odometer readings, 300 km or more apart"} />
           <StatCard label="Cost per km" value={s.run_per_km_paise ? inr(s.run_per_km_paise) : s.fuel_per_km_paise ? inr(s.fuel_per_km_paise) : "—"}
             sub={[s.fuel_per_km_paise && `fuel ${inr(s.fuel_per_km_paise)}/km`, s.run_per_km_paise && "everything, last 12 months", s.price_per_l && `₹${s.price_per_l}/${electric ? "kWh" : "l"} last fill`].filter(Boolean).join(" · ") || "Needs odometer readings"} />
           <StatCard label="This month" value={inr(s.month_paise)} sub={`${inr(s.year_paise)} in the last 12 months`} />

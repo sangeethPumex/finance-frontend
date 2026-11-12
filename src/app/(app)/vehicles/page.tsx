@@ -30,7 +30,7 @@ function VehicleCard({ v }: { v: Vehicle }) {
         </div>
         <div className="mt-4 grid grid-cols-3 gap-3 text-[12px]">
           <div><div className="text-muted">Odometer</div><div className="num mt-0.5 font-semibold">{s.odometer_km ? km(s.odometer_km) : "—"}</div></div>
-          <div><div className="text-muted">Mileage</div><div className="num mt-0.5 font-semibold">{s.avg_kmpl ? `${s.avg_kmpl} km/${v.fuel === "electric" ? "kWh" : "l"}` : "—"}</div></div>
+          <div><div className="text-muted">Mileage</div><div className="num mt-0.5 font-semibold">{s.avg_kmpl ? `${s.kmpl_estimated ? "~" : ""}${s.avg_kmpl} km/${v.fuel === "electric" ? "kWh" : "l"}` : "—"}</div></div>
           <div><div className="text-muted">This month</div><div className="num mt-0.5 font-semibold">{inr(s.month_paise)}</div></div>
         </div>
         {urgent.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5">{urgent.map((r) => <Badge key={r.kind} variant={r.tone}>{r.title}</Badge>)}</div>}

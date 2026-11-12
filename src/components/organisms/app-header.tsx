@@ -11,7 +11,7 @@ import { cn } from "@/lib/cn";
 import type { NavGroup } from "@/lib/nav";
 
 /** Top bar: sidebar toggle, breadcrumb of where you are, and a jump-to-page search (press / or Ctrl+K). */
-export function AppHeader({ groups, collapsed, onToggle }: { groups: NavGroup[]; collapsed: boolean; onToggle: () => void }) {
+export function AppHeader({ groups, collapsed, onToggle, home = "/", rootLabel = "Catalyst" }: { groups: NavGroup[]; collapsed: boolean; onToggle: () => void; home?: string; rootLabel?: string }) {
   const path = usePathname(), router = useRouter();
   const [q, setQ] = useState(""), [open, setOpen] = useState(false), [at, setAt] = useState(0);
   const box = useRef<HTMLInputElement>(null);
@@ -27,7 +27,7 @@ export function AppHeader({ groups, collapsed, onToggle }: { groups: NavGroup[];
   const unread = useNudges().data?.active.length ?? 0;
 
   const all = groups.flatMap((g) => g.links.map((l) => ({ ...l, group: g.title })));
-  const here = all.filter((l) => (l.href === "/" ? path === "/" : path.startsWith(l.href))).sort((a, b) => b.href.length - a.href.length)[0];
+  const here = all.filter((l) => (l.href === home ? path === home : path.startsWith(l.href))).sort((a, b) => b.href.length - a.href.length)[0];
   const hits = q.trim() ? all.filter((l) => `${l.label} ${l.group}`.toLowerCase().includes(q.trim().toLowerCase())) : all;
 
   useEffect(() => {
@@ -48,11 +48,11 @@ export function AppHeader({ groups, collapsed, onToggle }: { groups: NavGroup[];
       </button>
 
       <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-[13px]">
-        <Link href="/" className="hidden text-faint hover:text-sub sm:inline">Catalyst</Link>
+        <Link href={home} className="hidden text-faint hover:text-sub sm:inline">{rootLabel}</Link>
         {here && (
           <>
             <CaretRight size={11} className="hidden shrink-0 text-faint sm:block" />
-            {here.href !== "/" && <><span className="hidden text-faint sm:inline">{here.group}</span><CaretRight size={11} className="hidden shrink-0 text-faint sm:block" /></>}
+            {here.href !== home && <><span className="hidden text-faint sm:inline">{here.group}</span><CaretRight size={11} className="hidden shrink-0 text-faint sm:block" /></>}
             <span className="truncate font-medium text-ink">{here.label}</span>
           </>
         )}

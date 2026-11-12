@@ -410,7 +410,7 @@ export type VehicleLog = {
 };
 export type VehicleReminder = { kind: "insurance" | "puc" | "service"; title: string; date: string; days: number; tone: "good" | "warn" | "bad" };
 export type VehicleStats = {
-  odometer_km: number; avg_kmpl?: number; last_kmpl?: number; best_kmpl?: number; price_per_l?: number; km_per_month?: number; range_km?: number;
+  odometer_km: number; avg_kmpl?: number; kmpl_estimated?: boolean; last_kmpl?: number; best_kmpl?: number; price_per_l?: number; km_per_month?: number; range_km?: number;
   fills: { date: string; km: number; litres: number; kmpl: number; price_per_l: number }[];
   fuel_per_km_paise?: number; run_per_km_paise?: number; total_paise: number; month_paise: number; year_paise: number;
   by_kind: { kind: LogKind; paise: number; count: number }[];
@@ -469,3 +469,7 @@ export const useCopilot = () => useQuery({ queryKey: ["copilot"], queryFn: () =>
 export const useNudges = () => useQuery({ queryKey: ["copilot-nudges"], queryFn: () => api<Inbox>("/copilot/nudges"), refetchInterval: 5 * 60_000 });
 export const useCopilotWants = () => useQuery({ queryKey: ["copilot-wants"], queryFn: () => api<Want[]>("/copilot/wants") });
 export const useCopilotCheck = () => useMutation({ mutationFn: (body: CheckInput) => api<CheckResult>("/copilot/check", { method: "POST", body }) });
+
+// ---- Household: both people's totals, merged on the server ----
+export type HouseholdPerson = { name: string; cashPaise: number; investmentsPaise: number; failed?: boolean; days: { date: string; paise: number; top?: { vendor: string; paise: number } }[] };
+export const useHousehold = () => useQuery({ queryKey: ["household"], queryFn: () => api<{ people: HouseholdPerson[] }>("/household") });

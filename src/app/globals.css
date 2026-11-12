@@ -74,3 +74,24 @@ body { overflow-x: clip; }
 body { -webkit-tap-highlight-color: transparent; }
 a, button, input, select, summary { touch-action: manipulation; }
 @media (max-width: 767px) { input, select, textarea { font-size: 16px !important; } }
+
+/* Household space: the Markel-style board in Themes/personal-finance-theme.jpg. Cream surfaces, deep teal where the personal UI uses black, orange as the accent.
+   :has() lets dialogs portalled to <body> pick the theme up too. */
+[data-space="household"], :root:has([data-space="household"]) {
+  --color-ink: #0f4c5c;
+  --color-sub: #3d4a4a;
+  --color-muted: #7d786c;
+  --color-faint: #a8a294;
+  --color-line: #d9d3c4;
+  --color-line-soft: #e3dece;
+  --color-strong: #c5bfae;
+  --color-hover: #ebe6da;
+  --color-tint: #e6e1d4;
+  --color-subtle: #ebe6da;
+  --color-canvas: #efebe2;
+  --color-sidebar: #e7e2d5;
+  --color-surface: #f8f6f0;
+  --color-info: #ff4f0f;
+  --color-info-bg: #fde8de;
+}
+.space-gradient { background: radial-gradient(120% 140% at 15% 10%, #ff5a14 0%, #e8c9b0 38%, #0f4c5c 100%); }

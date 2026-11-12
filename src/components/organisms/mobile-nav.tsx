@@ -3,19 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DotsThreeCircle, SignOut } from "@phosphor-icons/react";
+import { ArrowsLeftRight, DotsThreeCircle, SignOut } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import type { NavGroup } from "@/lib/nav";
 import { Modal } from "../molecules";
 
-const PRIMARY = ["/", "/accounts", "/emis", "/transactions"];
-
 /** iPhone-style bottom tab bar: four main pages and a More sheet for the rest. Hidden from md up, where the sidebar takes over. */
-export function MobileNav({ groups, onSignOut }: { groups: NavGroup[]; onSignOut: () => void }) {
+export function MobileNav({ groups, onSignOut, primary: PRIMARY, home = "/" }: { groups: NavGroup[]; onSignOut: () => void; primary: string[]; home?: string }) {
   const path = usePathname();
   const [more, setMore] = useState(false);
   const all = groups.flatMap((g) => g.links), main = PRIMARY.map((h) => all.find((l) => l.href === h)!), rest = all.filter((l) => !PRIMARY.includes(l.href));
-  const on = (h: string) => (h === "/" ? path === "/" : path.startsWith(h));
+  const on = (h: string) => (h === home ? path === home : path.startsWith(h));
   const tab = "flex flex-col items-center gap-0.5 pt-2 text-[10px]";
 
   return (
@@ -38,6 +36,7 @@ export function MobileNav({ groups, onSignOut }: { groups: NavGroup[]; onSignOut
             {rest.map((l) => (
               <Link key={l.href} href={l.href} onClick={() => setMore(false)} className={cn("flex h-12 items-center gap-3 text-[15px]", on(l.href) ? "font-semibold" : "text-sub")}><l.icon size={20} weight="light" />{l.label}</Link>
             ))}
+            <Link href="/" onClick={() => setMore(false)} className="flex h-12 items-center gap-3 text-[15px] text-sub"><ArrowsLeftRight size={20} weight="light" />Switch space</Link>
             <button type="button" onClick={onSignOut} className="flex h-12 w-full items-center gap-3 text-[15px] text-loss"><SignOut size={20} weight="light" />Sign out</button>
           </div>
         </Modal>
