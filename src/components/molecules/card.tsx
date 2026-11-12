@@ -1,10 +1,14 @@
 import type { Icon } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 
-export type CardVariant = "outline" | "flat";
+/** glass and night are the pantry look (Themes/pint-theme*.jpg): frosted panel over a backdrop, and a charcoal block. */
+export type CardVariant = "outline" | "flat" | "glass" | "night";
 export type CardPadding = "none" | "sm" | "md";
 
-const variants: Record<CardVariant, string> = { outline: "overflow-hidden border border-line bg-surface", flat: "bg-tint" };
+const variants: Record<CardVariant, string> = { outline: "overflow-hidden border border-line bg-surface", flat: "bg-tint",
+  glass: "overflow-hidden border border-white/60 bg-white/35 shadow-[0_8px_32px_rgba(120,40,60,.12)] backdrop-blur-xl",
+  night: "bg-[#1f1f1f] text-white",
+};
 const paddings: Record<CardPadding, string> = { none: "", sm: "px-4 py-3", md: "px-4 py-4 sm:px-6 sm:py-5" };
 /** Pulls the title strip out to the card's edges, undoing the padding above. */
 const bleed: Record<CardPadding, string> = { none: "", sm: "-mx-4 -mt-3", md: "-mx-4 -mt-4 sm:-mx-6 sm:-mt-5" };

@@ -114,6 +114,29 @@ export const useCategoriesPage = paged<Category>("categories");
 export type BudgetStatus = { id: string; category_id: string; limit_paise: number; spent_paise: number; ratio: number; level: "ok" | "warn" | "over" };
 export const useBudgets = () => useQuery({ queryKey: ["budgets"], queryFn: () => api<BudgetStatus[]>("/budgets") });
 
+/** Grocery & Pantry Tracker: Swiggy orders kept by the backend (Instamart and Food). Money is paise; month is YYYY-MM in IST. */
+export type GrocerySource = "instamart" | "food";
+export type GroceryOrder = { source: GrocerySource; order_id: string; placed_at: string; total_paise: number; status: string; store?: string; summary?: string; items?: { name: string; qty: number }[]; item_count: number; bill?: { item_paise: number; delivery_paise: number; packaging_paise: number }; payment?: string };
+export type GroceryMonth = { month: string; orders: GroceryOrder[]; spend: Record<GrocerySource, { paise: number; count: number }>; total_paise: number };
+export const useSwiggyLink = () => useQuery({ queryKey: ["grocery", "swiggy"], queryFn: () => api<{ connected: boolean; connected_at?: string }>("/grocery/swiggy") });
+/** One month of stored orders (YYYY-MM, this month when left out). Read from the backend's own table; Swiggy is only called by the sync. */
+export const useGroceryMonth = (month?: string) => useQuery({
+  queryKey: ["grocery", "orders", month ?? "current"],
+  queryFn: () => api<GroceryMonth>(`/grocery/orders${month ? `?month=${month}` : ""}`),
+  placeholderData: (prev) => prev, // keep the old month on screen while the next one loads
+});
+
+/** A repeat Food order (weekday + time window + dish). name and line are written by the model; alt is a cheaper way to have the same thing, when one was found. */
+export type FoodHabit = { key: string; weekday: number; dish: string; restaurant: string; count: number; slots: number; avg_paise: number; monthly_paise: number; minute_of_day: number; name: string; line: string; alt?: string; next_at: string };
+export const useFoodHabits = () => useQuery({ queryKey: ["grocery", "habits"], queryFn: () => api<FoodHabit[]>("/grocery/habits") });
+
+export type BasketLine = { key: string; name: string; variant?: string; qty: number; price_paise: number; days_since: number };
+/** Instamart items probably running low. Read from stored data; the Swiggy cart is only touched by useAddBasket. */
+export type Basket = { lines: BasketLine[]; total_paise: number; threshold_paise: number; delivery_free: boolean; tipper?: BasketLine; fees_paise: number; fee_orders: number; no_sku: number };
+export const useBasket = () => useQuery({ queryKey: ["grocery", "basket"], queryFn: () => api<Basket>("/grocery/basket") });
+export type BasketResult = { added: number; in_cart: number; cart_total: string; warnings?: string[] };
+export const useAddBasket = () => useWrite((tipper: boolean) => api<BasketResult>("/grocery/basket", { method: "POST", body: { tipper } }), ["grocery"]);
+
 export type SavedView = { id: string; name: string; filter: Record<string, string> };
 export const useViews = list<SavedView>("views");
 

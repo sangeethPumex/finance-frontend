@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { Basket, House, UserCircle } from "@phosphor-icons/react/dist/ssr";
+import { ArrowRight, Basket, House, UserCircle } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 
 const SPACES: { href?: string; title: string; text: string; icon: Icon }[] = [
-  { href: "/personal-finance", title: "Personal Finance", text: "Your accounts, cards, investments and spending.", icon: UserCircle },
-  { href: "/household", title: "Household Finance", text: "Shared bills, budgets, EMIs and the garage.", icon: House },
-  { title: "Grocery & Pantry Tracker", text: "Stock, shopping lists and what is running low.", icon: Basket },
+  { href: "/personal-finance", title: "Personal Finance", text: "Accounts, cards, investments and everyday spending.", icon: UserCircle },
+  { href: "/household", title: "Household Finance", text: "Shared expenses, budgets, EMIs and household assets.", icon: House },
+  { href: "/grocery", title: "Grocery & Pantry Tracker", text: "Grocery orders, pantry activity and monthly spending.", icon: Basket },
 ];
 
 export default function SelectSpace() {
@@ -14,21 +14,24 @@ export default function SelectSpace() {
       <div className="w-full max-w-[960px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/catalyst-full.svg" alt="Catalyst" className="h-9 w-auto" />
-        <h1 className="mt-6 text-[22px] font-semibold tracking-tight">Where to today?</h1>
+        <h1 className="mt-6 text-[22px] font-semibold tracking-tight">Choose your space</h1>
+        <p className="mt-1 text-[14px] text-muted">Everything you manage, organised in one place.</p>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           {SPACES.map(({ href, title, text, icon: Icon }) => {
             const body = (
               <>
-                <Icon size={28} weight="light" />
-                <h2 className="mt-8 text-[16px] font-semibold">{title}</h2>
+                <span className="grid size-10 place-items-center border border-line bg-tint text-ink"><Icon size={20} weight="regular" aria-hidden /></span>
+                <h2 className="mt-4 text-[17px] font-medium">{title}</h2>
                 <p className="mt-1 text-[13px] text-muted">{text}</p>
-                {!href && <span className="eyebrow mt-4 inline-block border border-line px-2 py-0.5">Beta · coming soon</span>}
+                {href
+                  ? <ArrowRight size={16} aria-hidden className="absolute right-5 top-6 text-faint transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-ink" />
+                  : <span className="eyebrow mt-4 inline-block border border-line px-2 py-0.5">Beta · coming soon</span>}
               </>
             );
             return href ? (
-              <Link key={title} href={href} className="block border border-line bg-surface p-6 transition-shadow hover:shadow-[0_4px_12px_rgba(0,0,0,.08)]">{body}</Link>
+              <Link key={title} href={href} className="group relative block min-h-[168px] cursor-pointer border border-line bg-surface p-5 transition-colors duration-150 hover:border-ink/40 hover:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink active:bg-hover">{body}</Link>
             ) : (
-              <div key={title} aria-disabled className="cursor-not-allowed border border-line bg-surface p-6 opacity-50">{body}</div>
+              <div key={title} aria-disabled className="min-h-[168px] cursor-not-allowed border border-line bg-surface p-5 opacity-50">{body}</div>
             );
           })}
         </div>

@@ -95,3 +95,29 @@ a, button, input, select, summary { touch-action: manipulation; }
   --color-info-bg: #fde8de;
 }
 .space-gradient { background: radial-gradient(120% 140% at 15% 10%, #ff5a14 0%, #e8c9b0 38%, #0f4c5c 100%); }
+
+/* Pantry space: the pink-desert boards in Themes/pint-theme.jpg and Pint-theme-2.jpg. Blush surfaces, charcoal ink, rose accent; corners stay square.
+   :has() lets dialogs portalled to <body> pick the theme up too. */
+[data-space="pantry"], :root:has([data-space="pantry"]) {
+  --color-ink: #1f1f1f;
+  --color-sidebar: #f6e3e6;
+  --color-strong: #e4c6cb;
+  --color-faint: #b9a5a8;
+  --color-canvas: #fbf2f3;
+  --color-tint: #f5e8ea;
+  --color-subtle: #f9eef0;
+  --color-hover: #f9eef0;
+  --color-line: #eedadd;
+  --color-line-soft: #f4e5e7;
+  --color-muted: #8b7b7e;
+  --color-info: #d65f7a;
+  --color-info-bg: #fbe5ea;
+}
+.pantry-sky {
+  background:
+    radial-gradient(60% 40% at 70% 18%, rgba(255, 236, 230, .75), transparent 70%),
+    radial-gradient(80% 50% at 20% 100%, #f6cfd3 0%, transparent 70%),
+    linear-gradient(180deg, #efb3bc 0%, #e79ea8 45%, #d9888f 72%, #f1c5c8 100%);
+}
+.pantry-orb { border-radius: 9999px; background: radial-gradient(circle at 35% 30%, #fde6ea 0%, #f6acbb 50%, #e88aa0 100%); }
+.pantry-haze { border-radius: 9999px; background: radial-gradient(circle, rgba(240, 150, 170, .85) 0%, rgba(240, 150, 170, 0) 70%); filter: blur(18px); }

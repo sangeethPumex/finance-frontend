@@ -1,4 +1,4 @@
-import { ArrowsLeftRight, ListChecks, Bank, Car,ChartLineUp, ChartPie, ChartDonut, Calendar, CalendarDots, Compass, CreditCard, House, HandCoins, Lightbulb, SquaresFour, Target, UserCircle, Sparkle, Storefront, Tag, type Icon } from "@phosphor-icons/react";
+import { ArrowsLeftRight, Basket, Receipt, ListChecks, Bank, Car,ChartLineUp, ChartPie, ChartDonut, Calendar, CalendarDots, Compass, CreditCard, House, HandCoins, Lightbulb, SquaresFour, Target, UserCircle, Sparkle, Storefront, Tag, type Icon } from "@phosphor-icons/react";
 
 export type NavLink = { href: string; label: string; icon: Icon; ai?: boolean };
 export type NavGroup = { title: string; links: NavLink[] };
@@ -51,9 +51,15 @@ const HOUSEHOLD_GROUPS: NavGroup[] = [
   { title: "Garage", links: [{ href: "/household/vehicles", label: "Vehicles", icon: Car }] },
 ];
 
+const PANTRY_GROUPS: NavGroup[] = [
+  { title: "Overview", links: [{ href: "/grocery", label: "Dashboard", icon: SquaresFour }] },
+  { title: "Swiggy", links: [{ href: "/grocery/orders", label: "Orders", icon: Receipt }] },
+];
+
 /** A product space: its menu, its root page (active only on an exact match) and the four tabs shown on a phone. */
-export type SpaceKey = "personal" | "household";
+export type SpaceKey = "personal" | "household" | "pantry";
 export const SPACES: Record<SpaceKey, { groups: NavGroup[]; home: string; primary: string[]; icon: Icon }> = {
   personal: { groups: NAV_GROUPS, home: "/personal-finance", primary: ["/personal-finance", "/accounts", "/emis", "/transactions"], icon: UserCircle },
+  pantry: { groups: PANTRY_GROUPS, home: "/grocery", primary: ["/grocery", "/grocery/orders"], icon: Basket },
   household: { groups: HOUSEHOLD_GROUPS, home: "/household", primary: ["/household", "/household/budgets", "/household/bills", "/household/owed"], icon: House },
 };
